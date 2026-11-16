@@ -10,9 +10,11 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface HeaderBarProps {
   title: string;
+  versionNumber: number;
   onChangeTitle: (title: string) => void;
   onNew: () => void;
   onSave: () => void;
+  onOpenVersionHistory: () => void;
   onOpenGallery: () => void;
   onToggleGridSettings: () => void;
   onStartCrop: () => void;
@@ -22,9 +24,11 @@ interface HeaderBarProps {
 
 export function HeaderBar({
   title,
+  versionNumber,
   onChangeTitle,
   onNew,
   onSave,
+  onOpenVersionHistory,
   onOpenGallery,
   onToggleGridSettings,
   onStartCrop,
@@ -46,6 +50,13 @@ export function HeaderBar({
           placeholderTextColor="#94A3B8"
           maxLength={24}
         />
+        <TouchableOpacity
+          style={styles.versionBadge}
+          onPress={onOpenVersionHistory}
+          accessibilityLabel="Version History"
+        >
+          <Text style={styles.versionBadgeText}>v{versionNumber}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Right Action Icons */}
@@ -59,13 +70,22 @@ export function HeaderBar({
           <Ionicons name="add-outline" size={22} color="#0F172A" />
         </TouchableOpacity>
 
-        {/* Save */}
+        {/* Save & Versions */}
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={onSave}
-          accessibilityLabel="Save Doodle"
+          accessibilityLabel="Save & Version Options"
         >
           <Ionicons name="save-outline" size={20} color="#0F172A" />
+        </TouchableOpacity>
+
+        {/* Version History */}
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={onOpenVersionHistory}
+          accessibilityLabel="Version History"
+        >
+          <MaterialCommunityIcons name="history" size={20} color="#0284C7" />
         </TouchableOpacity>
 
         {/* Open Gallery / Doodle Files */}
@@ -147,6 +167,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 6,
     backgroundColor: '#F8FAFC',
+  },
+  versionBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  versionBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0284C7',
   },
   actions: {
     flexDirection: 'row',

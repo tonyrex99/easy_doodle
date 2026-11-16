@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { DoodlePath } from '../types/doodle';
 
+const MAX_UNDO_DEPTH = 50;
+
 export function useDrawingHistory(initialPaths: DoodlePath[] = []) {
   const [paths, setPaths] = useState<DoodlePath[]>(initialPaths);
   const [undoStack, setUndoStack] = useState<DoodlePath[][]>([]);
@@ -8,7 +10,13 @@ export function useDrawingHistory(initialPaths: DoodlePath[] = []) {
 
   const addPath = useCallback((newPath: DoodlePath) => {
     setPaths((prev) => {
-      setUndoStack((u) => [...u, prev]);
+      setUndoStack((u) => {
+        const nextStack = [...u, prev];
+        if (nextStack.length > MAX_UNDO_DEPTH) {
+          return nextStack.slice(nextStack.length - MAX_UNDO_DEPTH);
+        }
+        return nextStack;
+      });
       setRedoStack([]); // clear redo stack on new action
       return [...prev, newPath];
     });

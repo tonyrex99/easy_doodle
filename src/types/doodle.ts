@@ -34,8 +34,20 @@ export interface CanvasSettings {
   gridOpacity: number;
 }
 
+export interface DoodleVersionSnapshot {
+  id: string;
+  versionNumber: number;
+  label: string; // e.g. "My Doodle v2 (Nov 16, 3:30 PM)"
+  timestamp: number;
+  paths: DoodlePath[];
+  canvasSettings: CanvasSettings;
+  strokeCount: number;
+  note?: string;
+}
+
 export interface DoodleProject {
   id: string;
+  rootProjectId?: string;
   title: string;
   createdAt: number;
   updatedAt: number;
@@ -45,6 +57,8 @@ export interface DoodleProject {
   width?: number;
   height?: number;
   version: string;
+  versionNumber?: number;
+  versionHistory?: DoodleVersionSnapshot[];
 }
 
 export interface CropRect {
@@ -58,4 +72,3 @@ export interface ColorPreset {
   name: string;
   hex: string;
 }
-

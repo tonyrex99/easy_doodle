@@ -25,6 +25,7 @@ A lightweight, feature-packed freehand drawing and doodling mobile application b
   - Instant **Share Area** or direct **Save to Camera Roll**.
 - 💾 **Doodle Projects & Files (`.doodle`)**:
   - Save multiple doodle projects locally.
+  - **Version History & Milestone Snapshots**: Save as new versions with auto-suggested smart labels incorporating current date/time (e.g. `My Doodle v2 (Nov 16, 3:30 PM)`). Revert or restore previous versions anytime without losing work.
   - Built-in **Doodle Gallery** to open, duplicate, rename, or delete doodles.
   - Export & share `.doodle` vector project files so other devices/users can open and continue editing.
   - Open & import external `.doodle` files via the native system document picker.
