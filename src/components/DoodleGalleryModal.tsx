@@ -8,6 +8,8 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  TouchableWithoutFeedback,
+  PanResponder,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { DoodleProject } from '../types/doodle';
@@ -36,6 +38,19 @@ export function DoodleGalleryModal({
 }: DoodleGalleryModalProps) {
   const [projects, setProjects] = useState<DoodleProject[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Drag down to dismiss responder
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, gesture) => gesture.dy > 10,
+      onPanResponderRelease: (_e, gesture) => {
+        if (gesture.dy > 50) {
+          onClose();
+        }
+      },
+    })
+  ).current;
 
   const loadProjects = async () => {
     setLoading(true);
@@ -131,7 +146,7 @@ export function DoodleGalleryModal({
         >
           <Feather
             name="image"
-            size={22}
+            size={20}
             color={
               ['#1E293B', '#121214', '#0F172A'].includes(
                 item.canvasSettings.backgroundColor.toUpperCase()
@@ -154,22 +169,21 @@ export function DoodleGalleryModal({
             <Text style={styles.cardTitle} numberOfLines={1}>
               {item.title}
             </Text>
-            {isCurrent && <Text style={styles.currentBadge}>CURRENT</Text>}
+            {isCurrent && <Text style={styles.currentBadge}>ACTIVE</Text>}
           </View>
-          <Text style={styles.cardMeta}>
-            {formatDate(item.updatedAt)} • {item.paths.length} strokes •{' '}
-            {item.canvasSettings.gridType}
+          <Text style={styles.cardMeta} numberOfLines={1}>
+            {formatDate(item.updatedAt)} • {item.paths.length} strokes
           </Text>
         </TouchableOpacity>
 
-        {/* Action Buttons */}
+        {/* Action Buttons: strictly bounded with shrink to prevent offscreen overflow */}
         <View style={styles.cardActions}>
           <TouchableOpacity
             style={styles.actionIconBtn}
             onPress={() => handleShareFile(item)}
             accessibilityLabel="Share File"
           >
-            <Ionicons name="share-social-outline" size={18} color="#0284C7" />
+            <Ionicons name="share-social-outline" size={16} color="#0284C7" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -177,15 +191,15 @@ export function DoodleGalleryModal({
             onPress={() => handleDuplicate(item)}
             accessibilityLabel="Duplicate"
           >
-            <Ionicons name="copy-outline" size={18} color="#64748B" />
+            <Ionicons name="copy-outline" size={16} color="#64748B" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionIconBtn}
+            style={[styles.actionIconBtn, styles.deleteBtn]}
             onPress={() => handleDelete(item)}
             accessibilityLabel="Delete"
           >
-            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+            <Ionicons name="trash-outline" size={16} color="#EF4444" />
           </TouchableOpacity>
         </View>
       </View>
@@ -200,11 +214,21 @@ export function DoodleGalleryModal({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
+        {/* Tap outside to dismiss */}
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.card}>
+          {/* Drag to dismiss pill */}
+          <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
+            <View style={styles.dragHandle} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Ionicons name="folder-open" size={24} color="#0284C7" />
+              <Ionicons name="folder-open" size={22} color="#0284C7" />
               <Text style={styles.title}>My Doodles & Files</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -218,8 +242,8 @@ export function DoodleGalleryModal({
               style={styles.importBtn}
               onPress={handleImport}
             >
-              <Ionicons name="document-attach-outline" size={18} color="#0284C7" />
-              <Text style={styles.importBtnText}>Open .doodle File</Text>
+              <Ionicons name="document-attach-outline" size={17} color="#0284C7" />
+              <Text style={styles.importBtnText}>Open .doodle</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -229,7 +253,7 @@ export function DoodleGalleryModal({
                 onClose();
               }}
             >
-              <Ionicons name="add" size={18} color="#FFFFFF" />
+              <Ionicons name="add" size={17} color="#FFFFFF" />
               <Text style={styles.newBtnText}>New Canvas</Text>
             </TouchableOpacity>
           </View>
@@ -239,10 +263,10 @@ export function DoodleGalleryModal({
             <ActivityIndicator size="large" color="#0284C7" style={{ marginVertical: 40 }} />
           ) : projects.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Feather name="edit-3" size={48} color="#CBD5E1" />
+              <Feather name="folder" size={44} color="#CBD5E1" />
               <Text style={styles.emptyTitle}>No Doodles Saved Yet</Text>
               <Text style={styles.emptySubtitle}>
-                Draw something and tap Save to store your artwork or export .doodle files!
+                Draw something awesome and tap Save, or import a .doodle file to get started!
               </Text>
             </View>
           ) : (
@@ -250,8 +274,8 @@ export function DoodleGalleryModal({
               data={projects}
               keyExtractor={(item) => item.id}
               renderItem={renderProjectItem}
-              showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
             />
           )}
         </View>
@@ -263,32 +287,49 @@ export function DoodleGalleryModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'flex-end',
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 30,
-    height: '80%',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 40,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
   },
   closeBtn: {
@@ -299,7 +340,7 @@ const styles = StyleSheet.create({
   topActionsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   importBtn: {
     flex: 1,
@@ -310,6 +351,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
   },
   importBtnText: {
     fontSize: 13,
@@ -332,7 +375,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 24,
     gap: 10,
   },
   projectCard: {
@@ -340,62 +383,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderRadius: 14,
-    padding: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   currentCard: {
     borderColor: '#0284C7',
+    backgroundColor: '#F0F9FF',
     borderWidth: 1.5,
   },
   cardThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    marginRight: 12,
+    marginRight: 10,
   },
   cardInfo: {
     flex: 1,
+    marginRight: 6,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#0F172A',
   },
   currentBadge: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     color: '#0284C7',
     backgroundColor: '#E0F2FE',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
     borderRadius: 4,
     marginLeft: 6,
   },
   cardMeta: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
     marginTop: 2,
   },
   cardActions: {
     flexDirection: 'row',
-    gap: 6,
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
   },
   actionIconBtn: {
-    padding: 8,
+    padding: 7,
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  deleteBtn: {
+    borderColor: '#FEE2E2',
+    backgroundColor: '#FEF2F2',
+  },
   emptyContainer: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 40,
     paddingHorizontal: 30,
     gap: 10,
   },
@@ -410,4 +461,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

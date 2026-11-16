@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  TouchableWithoutFeedback,
+  PanResponder,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { DoodleVersionSnapshot } from '../types/doodle';
@@ -35,6 +37,19 @@ export function VersionHistoryModal({
   onCreateSnapshotNow,
 }: VersionHistoryModalProps) {
   const sortedVersions = [...versions].sort((a, b) => b.timestamp - a.timestamp);
+
+  // Drag down to dismiss responder
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, gesture) => gesture.dy > 10,
+      onPanResponderRelease: (_e, gesture) => {
+        if (gesture.dy > 50) {
+          onClose();
+        }
+      },
+    })
+  ).current;
 
   const formatDate = (timestamp: number) => {
     const d = new Date(timestamp);
@@ -69,77 +84,81 @@ export function VersionHistoryModal({
 
     return (
       <View style={[styles.versionCard, isCurrent && styles.currentVersionCard]}>
-        {/* Version Badge & Thumb */}
-        <View
-          style={[
-            styles.versionThumb,
-            { backgroundColor: item.canvasSettings.backgroundColor },
-          ]}
-        >
-          <Text
+        {/* Top Info Header within Card */}
+        <View style={styles.cardHeaderRow}>
+          <View
             style={[
-              styles.versionThumbText,
-              {
-                color: ['#1E293B', '#121214', '#0F172A'].includes(
-                  item.canvasSettings.backgroundColor.toUpperCase()
-                )
-                  ? '#FFFFFF'
-                  : '#0F172A',
-              },
+              styles.versionThumb,
+              { backgroundColor: item.canvasSettings.backgroundColor },
             ]}
           >
-            v{item.versionNumber}
-          </Text>
-        </View>
-
-        {/* Info */}
-        <View style={styles.versionInfo}>
-          <View style={styles.titleLine}>
-            <Text style={styles.versionLabel} numberOfLines={1}>
-              {item.label}
+            <Text
+              style={[
+                styles.versionThumbText,
+                {
+                  color: ['#1E293B', '#121214', '#0F172A'].includes(
+                    item.canvasSettings.backgroundColor.toUpperCase()
+                  )
+                    ? '#FFFFFF'
+                    : '#0F172A',
+                },
+              ]}
+            >
+              v{item.versionNumber}
             </Text>
-            {isCurrent && (
-              <View style={styles.activePill}>
-                <Text style={styles.activePillText}>CURRENT</Text>
-              </View>
-            )}
           </View>
-          <Text style={styles.versionMeta}>
-            {formatDate(item.timestamp)} • {item.strokeCount} strokes • {item.canvasSettings.gridType}
-          </Text>
-          {item.note ? (
-            <Text style={styles.versionNote} numberOfLines={2}>
-              "{item.note}"
+
+          <View style={styles.versionInfo}>
+            <View style={styles.titleLine}>
+              <Text style={styles.versionLabel} numberOfLines={1}>
+                {item.label}
+              </Text>
+              {isCurrent && (
+                <View style={styles.activePill}>
+                  <Text style={styles.activePillText}>CURRENT</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.versionMeta}>
+              {formatDate(item.timestamp)} • {item.strokeCount} strokes
             </Text>
-          ) : null}
+          </View>
         </View>
 
-        {/* Actions */}
-        <View style={styles.versionActions}>
+        {item.note ? (
+          <Text style={styles.versionNote} numberOfLines={2}>
+            "{item.note}"
+          </Text>
+        ) : null}
+
+        {/* Action Row: clean, bounded layout where delete icon is always visible and never cut off */}
+        <View style={styles.cardBottomRow}>
           <TouchableOpacity
             style={styles.restoreBtn}
             onPress={() => handleConfirmRestore(item)}
             accessibilityLabel="Restore Version"
           >
-            <Ionicons name="arrow-undo" size={16} color="#0284C7" />
+            <Ionicons name="arrow-undo" size={15} color="#0284C7" />
             <Text style={styles.restoreBtnText}>Restore</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => onExportVersion(item)}
-            accessibilityLabel="Export version"
-          >
-            <Ionicons name="share-outline" size={16} color="#475569" />
-          </TouchableOpacity>
+          <View style={styles.secondaryActions}>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => onExportVersion(item)}
+              accessibilityLabel="Export version"
+            >
+              <Ionicons name="share-outline" size={16} color="#475569" />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => onDeleteVersion(item.id)}
-            accessibilityLabel="Delete version"
-          >
-            <Ionicons name="trash-outline" size={16} color="#EF4444" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.iconBtn, styles.deleteBtn]}
+              onPress={() => onDeleteVersion(item.id)}
+              accessibilityLabel="Delete version"
+            >
+              <Ionicons name="trash-outline" size={16} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -153,42 +172,52 @@ export function VersionHistoryModal({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
+        {/* Tap outside to dismiss */}
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.card}>
+          {/* Drag to dismiss pill */}
+          <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
+            <View style={styles.dragHandle} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <MaterialCommunityIcons name="history" size={24} color="#0284C7" />
-              <Text style={styles.title}>Version History</Text>
+              <View>
+                <Text style={styles.title}>Version History</Text>
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  {projectTitle}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#64748B" />
             </TouchableOpacity>
           </View>
 
-          {/* Subheader and Snapshot Button */}
-          <View style={styles.topBar}>
-            <Text style={styles.subTitle} numberOfLines={1}>
-              {projectTitle}
-            </Text>
-            <TouchableOpacity
-              style={styles.newSnapshotBtn}
-              onPress={() => {
-                onClose();
-                onCreateSnapshotNow();
-              }}
-            >
-              <Ionicons name="camera-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.newSnapshotBtnText}>Take Snapshot</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Create new snapshot bar */}
+          <TouchableOpacity
+            style={styles.createSnapshotBtn}
+            onPress={() => {
+              onClose();
+              onCreateSnapshotNow();
+            }}
+          >
+            <Ionicons name="add-circle-outline" size={18} color="#0284C7" />
+            <Text style={styles.createSnapshotText}>Save Current Canvas as New Version</Text>
+          </TouchableOpacity>
 
-          {/* Version List */}
+          {/* List of snapshots */}
           {sortedVersions.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="source-branch" size={44} color="#CBD5E1" />
-              <Text style={styles.emptyTitle}>No Version Snapshots</Text>
+              <MaterialCommunityIcons name="clock-outline" size={44} color="#CBD5E1" />
+              <Text style={styles.emptyTitle}>No Version Snapshots Yet</Text>
               <Text style={styles.emptySubtitle}>
-                Save as a new version whenever you want to preserve a milestone or experiment with changes safely!
+                Whenever you want to save a milestone, tap "Save & Versions" and create a named snapshot.
               </Text>
             </View>
           ) : (
@@ -196,8 +225,8 @@ export function VersionHistoryModal({
               data={sortedVersions}
               keyExtractor={(item) => item.id}
               renderItem={renderVersionItem}
-              showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
             />
           )}
         </View>
@@ -209,76 +238,83 @@ export function VersionHistoryModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'flex-end',
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
-    height: '80%',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 40,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    flex: 1,
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
   },
   closeBtn: {
     padding: 6,
     borderRadius: 20,
     backgroundColor: '#F1F5F9',
   },
-  topBar: {
+  createSnapshotBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  subTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-    flex: 1,
-    marginRight: 10,
-  },
-  newSnapshotBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0284C7',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
+    justifyContent: 'center',
+    backgroundColor: '#E0F2FE',
+    paddingVertical: 10,
+    borderRadius: 12,
     gap: 6,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
   },
-  newSnapshotBtnText: {
-    fontSize: 12,
+  createSnapshotText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#0284C7',
   },
   listContent: {
+    paddingBottom: 24,
     gap: 10,
-    paddingBottom: 20,
   },
   versionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderRadius: 14,
     padding: 12,
@@ -287,25 +323,30 @@ const styles = StyleSheet.create({
   },
   currentVersionCard: {
     borderColor: '#0284C7',
+    backgroundColor: '#F0F9FF',
     borderWidth: 1.5,
   },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   versionThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    marginRight: 12,
+    marginRight: 10,
   },
   versionThumbText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
   },
   versionInfo: {
     flex: 1,
-    marginRight: 6,
   },
   titleLine: {
     flexDirection: 'row',
@@ -316,18 +357,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#0F172A',
-    flexShrink: 1,
+    flex: 1,
   },
   activePill: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#0284C7',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1.5,
     borderRadius: 4,
   },
   activePillText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#FFFFFF',
   },
   versionMeta: {
     fontSize: 11,
@@ -335,42 +376,56 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   versionNote: {
-    fontSize: 11,
+    fontSize: 12,
+    color: '#334155',
     fontStyle: 'italic',
-    color: '#475569',
-    marginTop: 2,
+    marginBottom: 8,
+    paddingHorizontal: 2,
   },
-  versionActions: {
+  cardBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
   },
   restoreBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E0F2FE',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     gap: 4,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
   },
   restoreBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#0284C7',
   },
+  secondaryActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
   iconBtn: {
-    padding: 6,
+    padding: 7,
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  deleteBtn: {
+    borderColor: '#FEE2E2',
+    backgroundColor: '#FEF2F2',
+  },
   emptyContainer: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 30,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
     gap: 10,
   },
   emptyTitle: {
@@ -384,4 +439,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

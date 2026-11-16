@@ -6,6 +6,9 @@ import {
   Modal,
   TouchableOpacity,
   TextInput,
+  TouchableWithoutFeedback,
+  PanResponder,
+  ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -37,6 +40,19 @@ export function SaveOptionsModal({
   const [versionLabel, setVersionLabel] = useState('');
   const [versionNote, setVersionNote] = useState('');
 
+  // Drag down to dismiss responder
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, gesture) => gesture.dy > 10,
+      onPanResponderRelease: (_e, gesture) => {
+        if (gesture.dy > 50) {
+          onClose();
+        }
+      },
+    })
+  ).current;
+
   // Generate smart default version name: e.g. "My Doodle v2 (16 Nov, 03:30 PM)"
   useEffect(() => {
     if (visible) {
@@ -63,11 +79,21 @@ export function SaveOptionsModal({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
+        {/* Tap outside to dismiss */}
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.card}>
+          {/* Drag to dismiss handle */}
+          <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
+            <View style={styles.dragHandle} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Ionicons name="save" size={24} color="#0284C7" />
+              <Ionicons name="save" size={22} color="#0284C7" />
               <Text style={styles.title}>Save Doodle</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -75,138 +101,142 @@ export function SaveOptionsModal({
             </TouchableOpacity>
           </View>
 
-          {/* Current Project Info */}
-          <View style={styles.projectInfoCard}>
-            <View style={styles.projectTextCol}>
-              <Text style={styles.projectTitleText} numberOfLines={1}>
-                {projectTitle}
-              </Text>
-              <Text style={styles.versionSubtext}>
-                Current: Version {currentVersionNumber} • {versionCount} saved snapshot{versionCount === 1 ? '' : 's'}
-              </Text>
-            </View>
-            {versionCount > 0 && (
-              <TouchableOpacity
-                style={styles.historyPillBtn}
-                onPress={() => {
-                  onClose();
-                  onOpenVersionHistory();
-                }}
-              >
-                <MaterialCommunityIcons name="history" size={16} color="#0284C7" />
-                <Text style={styles.historyPillText}>History</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Options */}
-          {!showVersionInput ? (
-            <View style={styles.optionsList}>
-              {/* Option A: Save as New Version (Recommended) */}
-              <TouchableOpacity
-                style={[styles.optionCard, styles.recommendedCard]}
-                onPress={() => setShowVersionInput(true)}
-              >
-                <View style={[styles.iconCircle, { backgroundColor: '#E0F2FE' }]}>
-                  <MaterialCommunityIcons name="source-branch" size={22} color="#0284C7" />
-                </View>
-                <View style={styles.optionDetails}>
-                  <View style={styles.optionTitleRow}>
-                    <Text style={styles.optionTitle}>Save as New Version</Text>
-                    <View style={styles.recommendedBadge}>
-                      <Text style={styles.recommendedBadgeText}>RECOMMENDED</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.optionDesc}>
-                    Creates Version {nextVersion} with date stamp so you can revert anytime
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-              </TouchableOpacity>
-
-              {/* Option B: Quick Overwrite Save */}
-              <TouchableOpacity
-                style={styles.optionCard}
-                onPress={() => {
-                  onClose();
-                  onQuickSave();
-                }}
-              >
-                <View style={[styles.iconCircle, { backgroundColor: '#F1F5F9' }]}>
-                  <Ionicons name="checkmark-done" size={20} color="#475569" />
-                </View>
-                <View style={styles.optionDetails}>
-                  <Text style={styles.optionTitle}>Quick Save</Text>
-                  <Text style={styles.optionDesc}>
-                    Updates current version ({currentVersionNumber}) without a new snapshot
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-              </TouchableOpacity>
-
-              {/* Option C: Save as Separate Project */}
-              <TouchableOpacity
-                style={styles.optionCard}
-                onPress={() => {
-                  onClose();
-                  onSaveAsNewProject(`${projectTitle} (Copy)`);
-                }}
-              >
-                <View style={[styles.iconCircle, { backgroundColor: '#F3E8FF' }]}>
-                  <Ionicons name="copy-outline" size={20} color="#9333EA" />
-                </View>
-                <View style={styles.optionDetails}>
-                  <Text style={styles.optionTitle}>Save as Separate Copy</Text>
-                  <Text style={styles.optionDesc}>
-                    Duplicates into a completely independent project file
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            /* Sub-view: Enter custom version label or use auto-generated */
-            <View style={styles.versionInputContainer}>
-              <Text style={styles.inputLabel}>Version Label (with date/time default):</Text>
-              <TextInput
-                style={styles.textInput}
-                value={versionLabel}
-                onChangeText={setVersionLabel}
-                placeholder="Version name"
-                placeholderTextColor="#94A3B8"
-              />
-
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Note (optional):</Text>
-              <TextInput
-                style={[styles.textInput, styles.noteInput]}
-                value={versionNote}
-                onChangeText={setVersionNote}
-                placeholder="e.g. Added color fills, changed character expression..."
-                placeholderTextColor="#94A3B8"
-                multiline
-              />
-
-              <View style={styles.inputActionsRow}>
+          <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* Current Project Info */}
+            <View style={styles.projectInfoCard}>
+              <View style={styles.projectTextCol}>
+                <Text style={styles.projectTitleText} numberOfLines={1}>
+                  {projectTitle}
+                </Text>
+                <Text style={styles.versionSubtext}>
+                  Current: Version {currentVersionNumber} • {versionCount} snapshot{versionCount === 1 ? '' : 's'}
+                </Text>
+              </View>
+              {versionCount > 0 && (
                 <TouchableOpacity
-                  style={styles.backBtn}
-                  onPress={() => setShowVersionInput(false)}
-                >
-                  <Text style={styles.backBtnText}>Back</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.confirmVersionBtn}
+                  style={styles.historyPillBtn}
                   onPress={() => {
                     onClose();
-                    onSaveAsVersion(versionLabel.trim() || `Version ${nextVersion}`, versionNote.trim());
+                    onOpenVersionHistory();
                   }}
                 >
-                  <Ionicons name="save" size={18} color="#FFFFFF" />
-                  <Text style={styles.confirmVersionBtnText}>Save Version {nextVersion}</Text>
+                  <MaterialCommunityIcons name="history" size={16} color="#0284C7" />
+                  <Text style={styles.historyPillText}>History</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Options */}
+            {!showVersionInput ? (
+              <View style={styles.optionsList}>
+                {/* Option A: Save as New Version (Recommended) */}
+                <TouchableOpacity
+                  style={[styles.optionCard, styles.recommendedCard]}
+                  onPress={() => setShowVersionInput(true)}
+                >
+                  <View style={[styles.iconCircle, { backgroundColor: '#E0F2FE' }]}>
+                    <MaterialCommunityIcons name="source-branch" size={22} color="#0284C7" />
+                  </View>
+                  <View style={styles.optionDetails}>
+                    <View style={styles.optionTitleRow}>
+                      <Text style={styles.optionTitle}>Save as New Version</Text>
+                      <View style={styles.recommendedBadge}>
+                        <Text style={styles.recommendedBadgeText}>RECOMMENDED</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.optionDesc}>
+                      Creates Version {nextVersion} with date stamp so you can revert anytime
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                </TouchableOpacity>
+
+                {/* Option B: Quick Overwrite Save */}
+                <TouchableOpacity
+                  style={styles.optionCard}
+                  onPress={() => {
+                    onClose();
+                    onQuickSave();
+                  }}
+                >
+                  <View style={[styles.iconCircle, { backgroundColor: '#F1F5F9' }]}>
+                    <Ionicons name="checkmark-done" size={20} color="#475569" />
+                  </View>
+                  <View style={styles.optionDetails}>
+                    <Text style={styles.optionTitle}>Quick Save</Text>
+                    <Text style={styles.optionDesc}>
+                      Updates current version ({currentVersionNumber}) directly
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                </TouchableOpacity>
+
+                {/* Option C: Save as Separate Project */}
+                <TouchableOpacity
+                  style={styles.optionCard}
+                  onPress={() => {
+                    onClose();
+                    onSaveAsNewProject(`${projectTitle} (Copy)`);
+                  }}
+                >
+                  <View style={[styles.iconCircle, { backgroundColor: '#F3E8FF' }]}>
+                    <Ionicons name="copy-outline" size={20} color="#9333EA" />
+                  </View>
+                  <View style={styles.optionDetails}>
+                    <Text style={styles.optionTitle}>Save as Separate Copy</Text>
+                    <Text style={styles.optionDesc}>
+                      Clones current drawing into a brand new doodle file
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
                 </TouchableOpacity>
               </View>
-            </View>
-          )}
+            ) : (
+              /* Custom Version Label Form */
+              <View style={styles.versionInputContainer}>
+                <Text style={styles.inputLabel}>Version Label</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={versionLabel}
+                  onChangeText={setVersionLabel}
+                  placeholder={`e.g. ${projectTitle} v${nextVersion}`}
+                  placeholderTextColor="#94A3B8"
+                  autoFocus
+                />
+
+                <Text style={[styles.inputLabel, { marginTop: 10 }]}>Version Note (Optional)</Text>
+                <TextInput
+                  style={[styles.textInput, styles.noteInput]}
+                  value={versionNote}
+                  onChangeText={setVersionNote}
+                  placeholder="e.g. Added background shading and line details"
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  numberOfLines={2}
+                />
+
+                <View style={styles.inputActionsRow}>
+                  <TouchableOpacity
+                    style={styles.backBtn}
+                    onPress={() => setShowVersionInput(false)}
+                  >
+                    <Text style={styles.backBtnText}>Back</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.confirmVersionBtn}
+                    onPress={() => {
+                      onClose();
+                      onSaveAsVersion(versionLabel.trim() || `${projectTitle} v${nextVersion}`, versionNote.trim());
+                    }}
+                  >
+                    <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                    <Text style={styles.confirmVersionBtnText}>Save Version {nextVersion}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -216,7 +246,7 @@ export function SaveOptionsModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'flex-end',
   },
   card: {
@@ -224,14 +254,34 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 8,
+    paddingBottom: 44,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   titleRow: {
     flexDirection: 'row',
@@ -240,7 +290,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
   },
   closeBtn: {
@@ -255,7 +305,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderRadius: 14,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -304,8 +354,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F9FF',
   },
   iconCircle: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -398,4 +448,3 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
-

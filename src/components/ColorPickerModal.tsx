@@ -7,34 +7,48 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  TouchableWithoutFeedback,
+  PanResponder,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PAINT_PALETTE } from '../constants/colors';
 
 interface ColorPickerModalProps {
   visible: boolean;
-  currentColor: string;
+  activeColor: string;
   onSelectColor: (color: string) => void;
   onClose: () => void;
-  recentColors?: string[];
 }
 
 export function ColorPickerModal({
   visible,
-  currentColor,
+  activeColor,
   onSelectColor,
   onClose,
-  recentColors = [],
 }: ColorPickerModalProps) {
-  const [customHex, setCustomHex] = useState(currentColor);
+  const [customHex, setCustomHex] = useState(
+    activeColor === 'transparent' ? '#000000' : activeColor
+  );
+
+  // Drag down to dismiss responder
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, gesture) => gesture.dy > 10,
+      onPanResponderRelease: (_e, gesture) => {
+        if (gesture.dy > 50) {
+          onClose();
+        }
+      },
+    })
+  ).current;
 
   const handleApplyCustomHex = () => {
     let cleanHex = customHex.trim();
     if (!cleanHex.startsWith('#')) {
       cleanHex = `#${cleanHex}`;
     }
-    // Verify hex format (3 or 6 characters)
-    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(cleanHex)) {
+    if (/^#[0-9A-F]{6}$/i.test(cleanHex) || /^#[0-9A-F]{3}$/i.test(cleanHex)) {
       onSelectColor(cleanHex);
       onClose();
     }
@@ -48,119 +62,107 @@ export function ColorPickerModal({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
+        {/* Tap outside to dismiss */}
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.card}>
+          {/* Drag to dismiss pill */}
+          <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
+            <View style={styles.dragHandle} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <Ionicons name="color-palette" size={24} color="#0284C7" />
-              <Text style={styles.title}>Choose Paint Colour</Text>
-            </View>
+            <Text style={styles.title}>Color Palette</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#64748B" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Current Selected Color Preview */}
-            <View style={styles.currentSection}>
+          {/* Active Color Preview & Transparent Option */}
+          <View style={styles.activeColorRow}>
+            <View style={styles.previewGroup}>
               <View
                 style={[
-                  styles.previewCircle,
-                  { backgroundColor: currentColor },
+                  styles.activeColorBox,
+                  activeColor === 'transparent'
+                    ? styles.transparentPreviewBox
+                    : { backgroundColor: activeColor },
                 ]}
-              />
-              <View style={styles.previewInfo}>
-                <Text style={styles.previewLabel}>Current Colour</Text>
-                <Text style={styles.previewHex}>{currentColor.toUpperCase()}</Text>
+              >
+                {activeColor === 'transparent' && (
+                  <MaterialCommunityIcons name="circle-off-outline" size={22} color="#64748B" />
+                )}
+              </View>
+              <View>
+                <Text style={styles.activeColorLabel}>Active Color</Text>
+                <Text style={styles.activeColorHex}>
+                  {activeColor === 'transparent' ? 'Transparent' : activeColor.toUpperCase()}
+                </Text>
               </View>
             </View>
 
-            {/* Quick Hex Input */}
-            <View style={styles.hexInputRow}>
-              <TextInput
-                style={styles.hexInput}
-                value={customHex}
-                onChangeText={setCustomHex}
-                placeholder="#FF0000"
-                placeholderTextColor="#94A3B8"
-                autoCapitalize="characters"
-                maxLength={7}
-              />
-              <TouchableOpacity
-                style={styles.applyBtn}
-                onPress={handleApplyCustomHex}
-              >
-                <Text style={styles.applyBtnText}>Set Hex</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Quick Pick Transparent */}
+            <TouchableOpacity
+              style={[
+                styles.transparentPickBtn,
+                activeColor === 'transparent' && styles.transparentPickBtnActive,
+              ]}
+              onPress={() => {
+                onSelectColor('transparent');
+                onClose();
+              }}
+            >
+              <MaterialCommunityIcons name="circle-off-outline" size={18} color="#0284C7" />
+              <Text style={styles.transparentPickText}>Transparent</Text>
+            </TouchableOpacity>
+          </View>
 
-            {/* Paint Palette Swatches */}
-            <Text style={styles.sectionTitle}>Classic Paint Swatches</Text>
-            <View style={styles.paletteGrid}>
-              {PAINT_PALETTE.map((color, index) => {
-                const isSelected =
-                  color.toLowerCase() === currentColor.toLowerCase();
-                return (
-                  <TouchableOpacity
-                    key={`${color}-${index}`}
-                    style={[
-                      styles.colorSwatch,
-                      { backgroundColor: color },
-                      isSelected && styles.selectedSwatch,
-                    ]}
-                    onPress={() => {
-                      setCustomHex(color);
-                      onSelectColor(color);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    {isSelected && (
-                      <Ionicons
-                        name="checkmark"
-                        size={16}
-                        color={
-                          ['#ffffff', '#fff200', '#efe4b0', '#99d9ea', '#c8bfe7'].includes(
-                            color.toLowerCase()
-                          )
-                            ? '#000000'
-                            : '#FFFFFF'
-                        }
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          {/* MS Paint Palette Matrix */}
+          <Text style={styles.sectionTitle}>Classic Paint Swatches</Text>
+          <View style={styles.swatchGrid}>
+            {PAINT_PALETTE.map((hex) => {
+              const isSelected = hex.toLowerCase() === activeColor.toLowerCase();
+              return (
+                <TouchableOpacity
+                  key={hex}
+                  style={[
+                    styles.gridSwatch,
+                    { backgroundColor: hex },
+                    hex === '#FFFFFF' && styles.whiteSwatchBorder,
+                    isSelected && styles.gridSwatchSelected,
+                  ]}
+                  onPress={() => {
+                    onSelectColor(hex);
+                    setCustomHex(hex);
+                    onClose();
+                  }}
+                />
+              );
+            })}
+          </View>
 
-            {/* Recently Used Colors */}
-            {recentColors.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Recent Colours</Text>
-                <View style={styles.recentRow}>
-                  {recentColors.slice(0, 10).map((color, idx) => (
-                    <TouchableOpacity
-                      key={`recent-${color}-${idx}`}
-                      style={[
-                        styles.recentSwatch,
-                        { backgroundColor: color },
-                        color.toLowerCase() === currentColor.toLowerCase() &&
-                          styles.selectedSwatch,
-                      ]}
-                      onPress={() => {
-                        setCustomHex(color);
-                        onSelectColor(color);
-                      }}
-                    />
-                  ))}
-                </View>
-              </>
-            )}
-          </ScrollView>
-
-          {/* Done Button */}
-          <TouchableOpacity style={styles.doneBtn} onPress={onClose}>
-            <Text style={styles.doneBtnText}>Apply Colour</Text>
-          </TouchableOpacity>
+          {/* Custom Hex Code Input */}
+          <Text style={styles.sectionTitle}>Custom Hex Color</Text>
+          <View style={styles.customHexRow}>
+            <TextInput
+              style={styles.hexInput}
+              value={customHex}
+              onChangeText={setCustomHex}
+              placeholder="#000000"
+              placeholderTextColor="#94A3B8"
+              maxLength={7}
+              autoCapitalize="characters"
+            />
+            <TouchableOpacity
+              style={styles.applyHexBtn}
+              onPress={handleApplyCustomHex}
+            >
+              <Text style={styles.applyHexText}>Apply</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -170,7 +172,7 @@ export function ColorPickerModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'flex-end',
   },
   card: {
@@ -178,24 +180,34 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 30,
-    maxHeight: '85%',
+    paddingTop: 8,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginBottom: 12,
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
   },
   closeBtn: {
@@ -203,41 +215,98 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#F1F5F9',
   },
-  currentSection: {
+  activeColorRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 14,
+    padding: 10,
     marginBottom: 14,
-    gap: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  previewCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
+  previewGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  activeColorBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1.5,
     borderColor: '#CBD5E1',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  previewInfo: {
-    flex: 1,
+  transparentPreviewBox: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#94A3B8',
   },
-  previewLabel: {
-    fontSize: 12,
+  activeColorLabel: {
+    fontSize: 11,
     color: '#64748B',
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  previewHex: {
-    fontSize: 16,
+  activeColorHex: {
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
   },
-  hexInputRow: {
+  transparentPickBtn: {
     flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  transparentPickBtnActive: {
+    borderColor: '#0284C7',
+    borderWidth: 2,
+  },
+  transparentPickText: {
+    color: '#0284C7',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  swatchGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginBottom: 16,
+    justifyContent: 'center',
+  },
+  gridSwatch: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  whiteSwatchBorder: {
+    borderColor: '#94A3B8',
+  },
+  gridSwatchSelected: {
+    borderColor: '#0284C7',
+    borderWidth: 3,
+    transform: [{ scale: 1.2 }],
+  },
+  customHexRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
   hexInput: {
     flex: 1,
@@ -251,71 +320,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  applyBtn: {
+  applyHexBtn: {
     backgroundColor: '#0284C7',
-    paddingHorizontal: 18,
     borderRadius: 12,
+    paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  applyBtnText: {
+  applyHexText: {
     color: '#FFFFFF',
-    fontWeight: '700',
     fontSize: 14,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-    marginTop: 6,
-  },
-  paletteGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16,
-  },
-  colorSwatch: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  selectedSwatch: {
-    borderWidth: 3,
-    borderColor: '#0284C7',
-    transform: [{ scale: 1.1 }],
-  },
-  recentRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  recentSwatch: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  doneBtn: {
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  doneBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '700',
   },
 });
-

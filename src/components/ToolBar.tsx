@@ -25,17 +25,18 @@ interface ToolBarProps {
   onSelectQuickColor: (color: string) => void;
 }
 
+// Purple (#A349A4) removed per user request, replaced with transparent & vivid primary paints
 const QUICK_COLORS = [
-  '#000000',
-  '#ED1C24',
-  '#FF7F27',
-  '#FFF200',
-  '#22B14C',
-  '#00A2E8',
-  '#3F48CC',
-  '#A349A4',
-  '#FFAEC9',
-  '#FFFFFF',
+  '#000000', // Black
+  '#ED1C24', // Red
+  '#FF7F27', // Orange
+  '#FFF200', // Yellow
+  '#22B14C', // Green
+  '#00A2E8', // Cyan/Light Blue
+  '#3F48CC', // Indigo
+  '#FFAEC9', // Pink
+  '#FFFFFF', // White
+  'transparent', // Transparent / Clear
 ];
 
 export function ToolBar({
@@ -57,6 +58,17 @@ export function ToolBar({
 
   const isShapeActive = ['line', 'rectangle', 'circle', 'arrow'].includes(activeTool);
 
+  const toggleTool = (tool: DrawingTool) => {
+    // If the user taps the tool that is already active, deselect it (switch to 'none' / pan mode)
+    if (activeTool === tool) {
+      onSelectTool('none');
+    } else {
+      onSelectTool(tool);
+    }
+    setShowShapeMenu(false);
+    setShowSizeMenu(false);
+  };
+
   const getShapeIcon = () => {
     switch (activeTool) {
       case 'rectangle':
@@ -73,7 +85,7 @@ export function ToolBar({
 
   return (
     <View style={styles.container}>
-      {/* Pop-up Shape Selection Menu */}
+      {/* Pop-up Shape Selection Submenu */}
       {showShapeMenu && (
         <View style={styles.submenu}>
           <TouchableOpacity
@@ -122,41 +134,17 @@ export function ToolBar({
         </View>
       )}
 
-      {/* Pop-up Size Selection Menu */}
+      {/* Pop-up Size Selection Submenu */}
       {showSizeMenu && (
         <View style={styles.submenuSize}>
           <Text style={styles.sizeTitle}>Stroke Size</Text>
           <View style={styles.sizeRow}>
-            {STROKE_WIDTH_PRESETS.map((preset) => (
-              <TouchableOpacity
-                key={preset.label}
-                style={[
-                  styles.sizeOption,
-                  strokeWidth === preset.value && styles.sizeOptionActive,
-                ]}
-                onPress={() => {
-                  onChangeStrokeWidth(preset.value);
-                  setShowSizeMenu(false);
-                }}
-              >
-                <View
-                  style={[
-                    styles.sizeDot,
-                    {
-                      width: Math.min(26, preset.value * 1.2 + 4),
-                      height: Math.min(26, preset.value * 1.2 + 4),
-                      backgroundColor: activeColor,
-                    },
-                  ]}
-                />
-                <Text style={styles.sizeLabel}>{preset.label}</Text>
-              </TouchableOpacity>
-            ))}
+            {STROROKE_PRESETS(activeColor, strokeWidth, onChangeStrokeWidth, setShowSizeMenu)}
           </View>
         </View>
       )}
 
-      {/* Top Strip: Quick Color Swatches like MS Paint Ribbon */}
+      {/* Top Strip: Quick Color Swatches + Transparent + Palette Picker at back */}
       <View style={styles.colorRibbon}>
         <ScrollView
           horizontal
@@ -164,13 +152,35 @@ export function ToolBar({
           contentContainerStyle={styles.colorScroll}
         >
           {QUICK_COLORS.map((col) => {
-            const isSelected = col.toLowerCase() === activeColor.toLowerCase();
+            const isTransparent = col === 'transparent';
+            const isSelected = isTransparent
+              ? activeColor === 'transparent'
+              : col.toLowerCase() === activeColor.toLowerCase();
+
+            if (isTransparent) {
+              return (
+                <TouchableOpacity
+                  key="transparent"
+                  style={[
+                    styles.ribbonSwatch,
+                    styles.transparentSwatch,
+                    isSelected && styles.ribbonSwatchSelected,
+                  ]}
+                  onPress={() => onSelectQuickColor('transparent')}
+                  accessibilityLabel="Transparent / Erase"
+                >
+                  <MaterialCommunityIcons name="circle-off-outline" size={16} color="#64748B" />
+                </TouchableOpacity>
+              );
+            }
+
             return (
               <TouchableOpacity
                 key={col}
                 style={[
                   styles.ribbonSwatch,
                   { backgroundColor: col },
+                  col === '#FFFFFF' && styles.whiteSwatchBorder,
                   isSelected && styles.ribbonSwatchSelected,
                 ]}
                 onPress={() => onSelectQuickColor(col)}
@@ -178,12 +188,13 @@ export function ToolBar({
             );
           })}
 
-          {/* Color Wheel / Full Palette Modal Opener */}
+          {/* Color Palette / Custom Picker Button at back */}
           <TouchableOpacity
             style={styles.moreColorBtn}
             onPress={onOpenColorPicker}
+            accessibilityLabel="More Colors / Custom Palette"
           >
-            <Ionicons name="color-palette-outline" size={18} color="#0284C7" />
+            <Ionicons name="color-palette" size={19} color="#0284C7" />
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -199,7 +210,7 @@ export function ToolBar({
           >
             <Ionicons
               name="arrow-undo-outline"
-              size={20}
+              size={19}
               color={canUndo ? '#0F172A' : '#CBD5E1'}
             />
           </TouchableOpacity>
@@ -210,7 +221,7 @@ export function ToolBar({
           >
             <Ionicons
               name="arrow-redo-outline"
-              size={20}
+              size={19}
               color={canRedo ? '#0F172A' : '#CBD5E1'}
             />
           </TouchableOpacity>
@@ -220,13 +231,11 @@ export function ToolBar({
 
         {/* Tools: Pen, Brush, Highlighter, Eraser */}
         <View style={styles.toolGroup}>
+          {/* Pen */}
           <TouchableOpacity
             style={[styles.toolBtn, activeTool === 'pen' && styles.toolBtnActive]}
-            onPress={() => {
-              onSelectTool('pen');
-              setShowShapeMenu(false);
-              setShowSizeMenu(false);
-            }}
+            onPress={() => toggleTool('pen')}
+            accessibilityLabel="Pen"
           >
             <Feather
               name="edit-2"
@@ -235,13 +244,11 @@ export function ToolBar({
             />
           </TouchableOpacity>
 
+          {/* Artistic Brush */}
           <TouchableOpacity
             style={[styles.toolBtn, activeTool === 'brush' && styles.toolBtnActive]}
-            onPress={() => {
-              onSelectTool('brush');
-              setShowShapeMenu(false);
-              setShowSizeMenu(false);
-            }}
+            onPress={() => toggleTool('brush')}
+            accessibilityLabel="Art Brush"
           >
             <MaterialCommunityIcons
               name="brush"
@@ -250,13 +257,11 @@ export function ToolBar({
             />
           </TouchableOpacity>
 
+          {/* Highlighter */}
           <TouchableOpacity
             style={[styles.toolBtn, activeTool === 'highlighter' && styles.toolBtnActive]}
-            onPress={() => {
-              onSelectTool('highlighter');
-              setShowShapeMenu(false);
-              setShowSizeMenu(false);
-            }}
+            onPress={() => toggleTool('highlighter')}
+            accessibilityLabel="Highlighter"
           >
             <MaterialCommunityIcons
               name="marker"
@@ -265,13 +270,11 @@ export function ToolBar({
             />
           </TouchableOpacity>
 
+          {/* Eraser */}
           <TouchableOpacity
             style={[styles.toolBtn, activeTool === 'eraser' && styles.toolBtnActive]}
-            onPress={() => {
-              onSelectTool('eraser');
-              setShowShapeMenu(false);
-              setShowSizeMenu(false);
-            }}
+            onPress={() => toggleTool('eraser')}
+            accessibilityLabel="Eraser"
           >
             <MaterialCommunityIcons
               name="eraser"
@@ -280,17 +283,18 @@ export function ToolBar({
             />
           </TouchableOpacity>
 
-          {/* Shapes Button with Submenu */}
+          {/* Shapes Menu */}
           <TouchableOpacity
             style={[styles.toolBtn, isShapeActive && styles.toolBtnActive]}
             onPress={() => {
-              setShowShapeMenu(!showShapeMenu);
+              setShowShapeMenu((prev) => !prev);
               setShowSizeMenu(false);
             }}
+            accessibilityLabel="Shapes"
           >
             <Ionicons
               name={getShapeIcon()}
-              size={19}
+              size={18}
               color={isShapeActive ? '#FFFFFF' : '#475569'}
             />
           </TouchableOpacity>
@@ -298,33 +302,74 @@ export function ToolBar({
 
         <View style={styles.divider} />
 
-        {/* Stroke Size Button */}
-        <TouchableOpacity
-          style={[styles.sizeIndicatorBtn, showSizeMenu && styles.toolBtnActive]}
-          onPress={() => {
-            setShowSizeMenu(!showSizeMenu);
-            setShowShapeMenu(false);
-          }}
-        >
-          <View
-            style={[
-              styles.previewDot,
-              {
-                width: Math.min(18, strokeWidth * 0.7 + 4),
-                height: Math.min(18, strokeWidth * 0.7 + 4),
-                backgroundColor: showSizeMenu ? '#FFFFFF' : '#0F172A',
-              },
-            ]}
-          />
-        </TouchableOpacity>
+        {/* Right Controls: Stroke Size & Clear */}
+        <View style={styles.rightGroup}>
+          <TouchableOpacity
+            style={[styles.sizeBtn, showSizeMenu && styles.sizeBtnActive]}
+            onPress={() => {
+              setShowSizeMenu((prev) => !prev);
+              setShowShapeMenu(false);
+            }}
+            accessibilityLabel="Stroke Width"
+          >
+            <View
+              style={[
+                styles.strokePreviewDot,
+                {
+                  width: Math.min(18, Math.max(6, strokeWidth * 0.9)),
+                  height: Math.min(18, Math.max(6, strokeWidth * 0.9)),
+                  backgroundColor:
+                    activeColor === 'transparent' ? '#64748B' : activeColor,
+                },
+              ]}
+            />
+            <Text style={styles.sizeBtnText}>{strokeWidth}px</Text>
+          </TouchableOpacity>
 
-        {/* Clear Canvas */}
-        <TouchableOpacity style={styles.clearBtn} onPress={onClear}>
-          <Ionicons name="trash-outline" size={19} color="#EF4444" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={onClear}
+            accessibilityLabel="Clear Canvas"
+          >
+            <Ionicons name="trash-outline" size={19} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
+}
+
+function STROROKE_PRESETS(
+  activeColor: string,
+  strokeWidth: number,
+  onChangeStrokeWidth: (w: number) => void,
+  setShowSizeMenu: (s: boolean) => void
+) {
+  return STROKE_WIDTH_PRESETS.map((preset) => (
+    <TouchableOpacity
+      key={preset.label}
+      style={[
+        styles.sizeOption,
+        strokeWidth === preset.value && styles.sizeOptionActive,
+      ]}
+      onPress={() => {
+        onChangeStrokeWidth(preset.value);
+        setShowSizeMenu(false);
+      }}
+    >
+      <View
+        style={[
+          styles.sizeDot,
+          {
+            width: Math.min(26, preset.value * 1.2 + 4),
+            height: Math.min(26, preset.value * 1.2 + 4),
+            backgroundColor: activeColor === 'transparent' ? '#64748B' : activeColor,
+          },
+        ]}
+      />
+      <Text style={styles.sizeLabel}>{preset.label}</Text>
+    </TouchableOpacity>
+  ));
 }
 
 const styles = StyleSheet.create({
@@ -332,112 +377,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 6,
-  },
-  submenu: {
-    position: 'absolute',
-    top: -55,
-    left: 80,
-    right: 80,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  subBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
-  },
-  subBtnActive: {
-    backgroundColor: '#E0F2FE',
-  },
-  subBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-  submenuSize: {
-    position: 'absolute',
-    top: -95,
-    left: 16,
-    right: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  sizeTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  sizeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  sizeOption: {
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  sizeOptionActive: {
-    backgroundColor: '#E0F2FE',
-  },
-  sizeDot: {
-    borderRadius: 13,
-    marginBottom: 4,
-  },
-  sizeLabel: {
-    fontSize: 11,
-    color: '#475569',
-    fontWeight: '600',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 8,
   },
   colorRibbon: {
-    marginBottom: 8,
-    paddingBottom: 6,
+    paddingVertical: 7,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   colorScroll: {
+    paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 4,
+    gap: 8,
   },
   ribbonSwatch: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1.5,
+    width: 27,
+    height: 27,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  whiteSwatchBorder: {
     borderColor: '#CBD5E1',
+  },
+  transparentSwatch: {
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: '#94A3B8',
   },
   ribbonSwatchSelected: {
     borderColor: '#0284C7',
@@ -445,28 +416,34 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.15 }],
   },
   moreColorBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F0F9FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    backgroundColor: '#E0F2FE',
     borderWidth: 1,
     borderColor: '#BAE6FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 2,
   },
   toolsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   historyGroup: {
     flexDirection: 'row',
     gap: 4,
   },
   iconBtn: {
-    padding: 8,
-    borderRadius: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   disabledBtn: {
     opacity: 0.4,
@@ -475,35 +452,129 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: '#E2E8F0',
-    marginHorizontal: 4,
+    marginHorizontal: 3,
   },
   toolGroup: {
     flexDirection: 'row',
-    gap: 6,
+    alignItems: 'center',
+    gap: 4,
   },
   toolBtn: {
-    padding: 9,
-    borderRadius: 10,
-    backgroundColor: '#F1F5F9',
-  },
-  toolBtnActive: {
-    backgroundColor: '#0284C7',
-  },
-  sizeIndicatorBtn: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 9,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  previewDot: {
+  toolBtnActive: {
+    backgroundColor: '#0284C7',
+  },
+  rightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sizeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  sizeBtnActive: {
+    backgroundColor: '#E0F2FE',
+    borderWidth: 1,
+    borderColor: '#0284C7',
+  },
+  strokePreviewDot: {
     borderRadius: 9,
   },
-  clearBtn: {
-    padding: 9,
-    borderRadius: 10,
-    backgroundColor: '#FEF2F2',
+  sizeBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  submenu: {
+    position: 'absolute',
+    bottom: 50,
+    left: 80,
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 6,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 999,
+  },
+  subBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  subBtnActive: {
+    backgroundColor: '#E0F2FE',
+  },
+  subBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  submenuSize: {
+    position: 'absolute',
+    bottom: 50,
+    right: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 999,
+  },
+  sizeTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  sizeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sizeOption: {
+    alignItems: 'center',
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    minWidth: 44,
+  },
+  sizeOptionActive: {
+    backgroundColor: '#E0F2FE',
+    borderWidth: 1,
+    borderColor: '#0284C7',
+  },
+  sizeDot: {
+    borderRadius: 13,
+    marginBottom: 4,
+  },
+  sizeLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#475569',
   },
 });
-

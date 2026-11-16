@@ -6,6 +6,8 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
+  TouchableWithoutFeedback,
+  PanResponder,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CanvasSettings, GridType } from '../types/doodle';
@@ -48,6 +50,19 @@ export function GridSelectorModal({
     settings.backgroundColor.toUpperCase()
   );
 
+  // Drag down to dismiss responder
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, gesture) => gesture.dy > 10,
+      onPanResponderRelease: (_e, gesture) => {
+        if (gesture.dy > 50) {
+          onClose();
+        }
+      },
+    })
+  ).current;
+
   return (
     <Modal
       visible={visible}
@@ -56,7 +71,17 @@ export function GridSelectorModal({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
+        {/* Tap outside to dismiss */}
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+
         <View style={styles.card}>
+          {/* Drag to dismiss handle */}
+          <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
+            <View style={styles.dragHandle} />
+          </View>
+
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <MaterialCommunityIcons name="grid-large" size={24} color="#0284C7" />
@@ -67,7 +92,7 @@ export function GridSelectorModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {/* Grid Pattern Type */}
             <Text style={styles.sectionTitle}>Grid Style</Text>
             <View style={styles.typeGrid}>
@@ -175,33 +200,32 @@ export function GridSelectorModal({
               </>
             )}
 
-            {/* Canvas Background Color */}
-            <Text style={styles.sectionTitle}>Canvas Paper / Background</Text>
-            <View style={styles.bgGrid}>
+            {/* Canvas Paper / Background Palette */}
+            <Text style={styles.sectionTitle}>Paper & Background</Text>
+            <View style={styles.backgroundsGrid}>
               {CANVAS_BACKGROUND_PRESETS.map((preset) => {
                 const isSelected =
-                  preset.hex.toLowerCase() ===
-                  settings.backgroundColor.toLowerCase();
+                  settings.backgroundColor.toUpperCase() ===
+                  preset.hex.toUpperCase();
                 return (
                   <TouchableOpacity
                     key={preset.name}
                     style={[
-                      styles.bgCard,
+                      styles.bgPresetCard,
                       { backgroundColor: preset.hex },
-                      isSelected && styles.bgCardSelected,
+                      isSelected && styles.bgPresetSelected,
                     ]}
                     onPress={() => {
-                      const willBeDark = preset.dark;
                       onChangeSettings({
                         ...settings,
                         backgroundColor: preset.hex,
-                        gridColor: willBeDark ? '#64748B' : '#CBD5E1',
+                        gridColor: preset.dark ? '#64748B' : '#94A3B8',
                       });
                     }}
                   >
                     <Text
                       style={[
-                        styles.bgName,
+                        styles.bgPresetText,
                         { color: preset.dark ? '#FFFFFF' : '#0F172A' },
                       ]}
                     >
@@ -210,7 +234,7 @@ export function GridSelectorModal({
                     {isSelected && (
                       <Ionicons
                         name="checkmark-circle"
-                        size={18}
+                        size={16}
                         color={preset.dark ? '#38BDF8' : '#0284C7'}
                       />
                     )}
@@ -219,10 +243,6 @@ export function GridSelectorModal({
               })}
             </View>
           </ScrollView>
-
-          <TouchableOpacity style={styles.doneBtn} onPress={onClose}>
-            <Text style={styles.doneBtnText}>Apply Settings</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -232,7 +252,7 @@ export function GridSelectorModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'flex-end',
   },
   card: {
@@ -240,9 +260,28 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 30,
+    paddingTop: 8,
+    paddingBottom: 40,
     maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -257,7 +296,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
   },
   closeBtn: {
@@ -266,25 +305,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: '#64748B',
+    marginBottom: 8,
+    marginTop: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 10,
-    marginTop: 10,
   },
   typeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   typeCard: {
     flex: 1,
     minWidth: '28%',
     alignItems: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 12,
     backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
@@ -293,7 +333,7 @@ const styles = StyleSheet.create({
   },
   typeCardSelected: {
     borderColor: '#0284C7',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F0F9FF',
   },
   typeLabel: {
     fontSize: 12,
@@ -306,21 +346,21 @@ const styles = StyleSheet.create({
   },
   optionsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 12,
   },
   optionBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    borderWidth: 1,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
+    alignItems: 'center',
   },
   optionBtnSelected: {
-    backgroundColor: '#E0F2FE',
     borderColor: '#0284C7',
+    backgroundColor: '#E0F2FE',
   },
   optionLabel: {
     fontSize: 12,
@@ -331,42 +371,29 @@ const styles = StyleSheet.create({
     color: '#0284C7',
     fontWeight: '700',
   },
-  bgGrid: {
+  backgroundsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 8,
   },
-  bgCard: {
+  bgPresetCard: {
     width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#CBD5E1',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  bgCardSelected: {
+  bgPresetSelected: {
     borderColor: '#0284C7',
     borderWidth: 2.5,
   },
-  bgName: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  doneBtn: {
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  doneBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  bgPresetText: {
+    fontSize: 12,
     fontWeight: '700',
   },
 });
-

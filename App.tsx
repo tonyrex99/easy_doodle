@@ -427,7 +427,10 @@ export default function App() {
           onOpenVersionHistory={() => setVersionHistoryVisible(true)}
           onOpenGallery={() => setGalleryVisible(true)}
           onToggleGridSettings={() => setGridSettingsVisible(true)}
-          onStartCrop={() => setIsCropModeActive((prev) => !prev)}
+          onStartCrop={() => {
+            canvasRef.current?.resetZoom?.();
+            setIsCropModeActive((prev) => !prev);
+          }}
           onOpenShareModal={() => setShareModalVisible(true)}
           isCropModeActive={isCropModeActive}
         />
@@ -475,10 +478,9 @@ export default function App() {
         {/* Color Picker Modal */}
         <ColorPickerModal
           visible={colorPickerVisible}
-          currentColor={activeColor}
+          activeColor={activeColor}
           onSelectColor={handleSelectColor}
           onClose={() => setColorPickerVisible(false)}
-          recentColors={recentColors}
         />
 
         {/* Grid & Canvas Background Settings Modal */}
