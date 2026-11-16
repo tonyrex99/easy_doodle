@@ -19,6 +19,35 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "*/*",
+              "pathPattern": ".*\\.doodle"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "*/*",
+              "pathPattern": ".*\\.doodle"
+            },
+            {
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\.doodle"
+            },
+            {
+              "mimeType": "application/json",
+              "pathPattern": ".*\\.doodle"
+            }
+          ],
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ]
+        }
+      ],
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",

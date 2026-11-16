@@ -1,10 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   View,
+  Text,
   Alert,
   ActivityIndicator,
-  Text,
+  BackHandler,
+  Linking,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -24,10 +26,18 @@ import {
   CanvasSettings,
   DoodleProject,
   DoodleVersionSnapshot,
+  DoodlePath,
   CropRect,
 } from './src/types/doodle';
 import { DEFAULT_CANVAS_SETTINGS } from './src/constants/colors';
-import { saveProject, shareDoodleFile } from './src/utils/fileSystem';
+import {
+  saveProject,
+  shareDoodleFile,
+  importDoodleFromUri,
+  saveAutoRecoveryDraft,
+  getAutoRecoveryDraft,
+  clearAutoRecoveryDraft,
+} from './src/utils/fileSystem';
 import {
   captureCanvas,
   shareImage,
@@ -35,9 +45,7 @@ import {
 } from './src/utils/cropCapture';
 
 export default function App() {
-  const [projectId, setProjectId] = useState<string>(
-    () => `doodle_${Date.now()}`
-  );
+  const [projectId, setProjectId] = useState<string>(() => `doodle_${Date.now()}`);
   const [projectTitle, setProjectTitle] = useState('My Doodle');
   const [versionNumber, setVersionNumber] = useState(1);
   const [versionHistory, setVersionHistory] = useState<DoodleVersionSnapshot[]>([]);
@@ -53,6 +61,9 @@ export default function App() {
   const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(
     DEFAULT_CANVAS_SETTINGS
   );
+
+  // Unsaved changes tracking
+  const [isDirty, setIsDirty] = useState(false);
 
   // Modals state
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
@@ -80,50 +91,45 @@ export default function App() {
     canRedo,
   } = useDrawingHistory();
 
+  // Track edits to set isDirty
+  const handleAddPath = useCallback(
+    (path: DoodlePath) => {
+      addPath(path);
+      setIsDirty(true);
+    },
+    [addPath]
+  );
+
+  const handleUndo = useCallback(() => {
+    undo();
+    setIsDirty(true);
+  }, [undo]);
+
+  const handleRedo = useCallback(() => {
+    redo();
+    setIsDirty(true);
+  }, [redo]);
+
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setProjectTitle(newTitle);
+    setIsDirty(true);
+  }, []);
+
+  const handleCanvasSettingsChange = useCallback((newSettings: CanvasSettings) => {
+    setCanvasSettings(newSettings);
+    setIsDirty(true);
+  }, []);
+
   // Color selection helper
   const handleSelectColor = useCallback((color: string) => {
     setActiveColor(color);
-    setRecentColors((prev) => {
-      const filtered = prev.filter(
-        (c) => c.toLowerCase() !== color.toLowerCase()
-      );
-      return [color, ...filtered].slice(0, 12);
-    });
-  }, []);
-
-  // New Doodle
-  const handleNewDoodle = useCallback(() => {
-    if (paths.length > 0) {
-      Alert.alert(
-        'Create New Doodle',
-        'Would you like to start a fresh canvas? Unsaved changes will be discarded.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'New Doodle',
-            style: 'destructive',
-            onPress: () => {
-              setProjectId(`doodle_${Date.now()}`);
-              setProjectTitle('My Doodle');
-              setVersionNumber(1);
-              setVersionHistory([]);
-              loadPaths([]);
-              setCanvasSettings(DEFAULT_CANVAS_SETTINGS);
-              setIsCropModeActive(false);
-            },
-          },
-        ]
-      );
-    } else {
-      setProjectId(`doodle_${Date.now()}`);
-      setProjectTitle('My Doodle');
-      setVersionNumber(1);
-      setVersionHistory([]);
-      loadPaths([]);
-      setCanvasSettings(DEFAULT_CANVAS_SETTINGS);
-      setIsCropModeActive(false);
+    if (color !== 'transparent') {
+      setRecentColors((prev) => {
+        const filtered = prev.filter((c) => c.toLowerCase() !== color.toLowerCase());
+        return [color, ...filtered].slice(0, 12);
+      });
     }
-  }, [paths.length, loadPaths]);
+  }, []);
 
   // Current project representation
   const getCurrentProject = useCallback((): DoodleProject => {
@@ -147,6 +153,8 @@ export default function App() {
       setBusyMessage('Saving doodle...');
       const project = getCurrentProject();
       await saveProject(project);
+      setIsDirty(false);
+      await saveAutoRecoveryDraft(project, false);
       Alert.alert('Saved', `"${project.title}" saved successfully!`);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save doodle');
@@ -154,6 +162,47 @@ export default function App() {
       setIsBusy(false);
     }
   }, [getCurrentProject]);
+
+  // Reset to pristine new canvas
+  const performNewCanvasReset = useCallback(() => {
+    setProjectId(`doodle_${Date.now()}`);
+    setProjectTitle('My Doodle');
+    setVersionNumber(1);
+    setVersionHistory([]);
+    loadPaths([]);
+    setCanvasSettings(DEFAULT_CANVAS_SETTINGS);
+    setIsCropModeActive(false);
+    setIsDirty(false);
+    clearAutoRecoveryDraft();
+  }, [loadPaths]);
+
+  // New Doodle (only warns if there are actual unsaved changes!)
+  const handleNewDoodle = useCallback(() => {
+    if (isDirty && paths.length > 0) {
+      Alert.alert(
+        'Unsaved Changes',
+        'Would you like to start a fresh canvas? Unsaved changes will be discarded.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Discard & New',
+            style: 'destructive',
+            onPress: performNewCanvasReset,
+          },
+          {
+            text: 'Save First',
+            onPress: async () => {
+              await handleQuickSave();
+              performNewCanvasReset();
+            },
+          },
+        ]
+      );
+    } else {
+      // Pristine or already saved: no annoying prompt!
+      performNewCanvasReset();
+    }
+  }, [isDirty, paths.length, performNewCanvasReset, handleQuickSave]);
 
   // Save as New Version with auto-generated or custom label
   const handleSaveAsVersion = useCallback(
@@ -184,6 +233,8 @@ export default function App() {
         await saveProject(updatedProject);
         setVersionNumber(nextVer);
         setVersionHistory(updatedHistory);
+        setIsDirty(false);
+        await saveAutoRecoveryDraft(updatedProject, false);
         Alert.alert(
           'Version Saved!',
           `Created "${versionLabel}" with ${paths.length} strokes. You can restore this version anytime from Version History.`
@@ -218,6 +269,8 @@ export default function App() {
         setProjectTitle(newTitle);
         setVersionNumber(1);
         setVersionHistory([]);
+        setIsDirty(false);
+        await saveAutoRecoveryDraft(copiedProject, false);
         Alert.alert('Copy Saved', `Saved as new project "${newTitle}"!`);
       } catch (err: any) {
         Alert.alert('Error', err.message || 'Failed to create copy');
@@ -234,6 +287,7 @@ export default function App() {
       loadPaths(snapshot.paths || []);
       setCanvasSettings(snapshot.canvasSettings || DEFAULT_CANVAS_SETTINGS);
       setVersionNumber(snapshot.versionNumber);
+      setIsDirty(true);
       Alert.alert(
         'Version Restored',
         `Reverted to "${snapshot.label}". You can undo this change using the Undo button.`
@@ -281,7 +335,7 @@ export default function App() {
     [versionHistory, getCurrentProject]
   );
 
-  // Open Project from Gallery or File
+  // Open Project from Gallery or External File
   const handleOpenProject = useCallback(
     (project: DoodleProject) => {
       setProjectId(project.id);
@@ -291,6 +345,7 @@ export default function App() {
       setCanvasSettings(project.canvasSettings || DEFAULT_CANVAS_SETTINGS);
       loadPaths(project.paths || []);
       setIsCropModeActive(false);
+      setIsDirty(false);
     },
     [loadPaths]
   );
@@ -300,19 +355,22 @@ export default function App() {
     if (paths.length === 0) return;
     Alert.alert(
       'Clear Canvas',
-      'Are you sure you want to clear the entire canvas?',
+      'Are you sure you want to clear all strokes? You can undo this action.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear All',
           style: 'destructive',
-          onPress: clearCanvas,
+          onPress: () => {
+            clearCanvas();
+            setIsDirty(true);
+          },
         },
       ]
     );
   }, [paths.length, clearCanvas]);
 
-  // Share full drawing
+  // Share full PNG image
   const handleShareFullImage = useCallback(async () => {
     if (!canvasRef.current?.viewShotRef.current) return;
     try {
@@ -409,6 +467,137 @@ export default function App() {
     [projectTitle]
   );
 
+  // Word-style Auto-Recovery Auto-Save (Debounced 1.5s when isDirty)
+  useEffect(() => {
+    if (!isDirty || paths.length === 0) return;
+    const timer = setTimeout(() => {
+      const project = getCurrentProject();
+      saveAutoRecoveryDraft(project, true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [paths, projectTitle, canvasSettings, isDirty, getCurrentProject]);
+
+  // Auto-Recovery Check on Startup
+  useEffect(() => {
+    (async () => {
+      const draft = await getAutoRecoveryDraft();
+      if (
+        draft &&
+        draft.isDirty &&
+        draft.project &&
+        draft.project.paths &&
+        draft.project.paths.length > 0
+      ) {
+        const timeStr = new Date(draft.timestamp).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        Alert.alert(
+          'Recover Unsaved Drawing',
+          `Easy Doodle recovered an unsaved session from ${timeStr} for "${draft.project.title}" (${draft.project.paths.length} strokes). Would you like to restore it?`,
+          [
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => clearAutoRecoveryDraft(),
+            },
+            {
+              text: 'Restore Drawing',
+              onPress: () => {
+                handleOpenProject(draft.project);
+                setIsDirty(true);
+              },
+            },
+          ]
+        );
+      }
+    })();
+  }, [handleOpenProject]);
+
+  // Android File Intent Linking (Handles opening .doodle files from other apps / downloads)
+  useEffect(() => {
+    const handleIncomingUrl = async (url?: string | null) => {
+      if (!url) return;
+      try {
+        const imported = await importDoodleFromUri(url);
+        if (imported) {
+          handleOpenProject(imported);
+          Alert.alert('Opened Doodle', `Loaded "${imported.title}" from file.`);
+        }
+      } catch (err: any) {
+        console.warn('Could not open external doodle file:', err);
+      }
+    };
+
+    Linking.getInitialURL().then(handleIncomingUrl);
+    const sub = Linking.addEventListener('url', (evt) => handleIncomingUrl(evt.url));
+    return () => sub.remove();
+  }, [handleOpenProject]);
+
+  // Hardware Back Button Interception (Warns if quitting with unsaved changes)
+  useEffect(() => {
+    const onBackPress = () => {
+      if (isCropModeActive) {
+        setIsCropModeActive(false);
+        return true;
+      }
+      if (
+        colorPickerVisible ||
+        gridSettingsVisible ||
+        galleryVisible ||
+        shareModalVisible ||
+        saveOptionsVisible ||
+        versionHistoryVisible
+      ) {
+        setColorPickerVisible(false);
+        setGridSettingsVisible(false);
+        setGalleryVisible(false);
+        setShareModalVisible(false);
+        setSaveOptionsVisible(false);
+        setVersionHistoryVisible(false);
+        return true;
+      }
+      if (isDirty && paths.length > 0) {
+        Alert.alert(
+          'Unsaved Changes',
+          `"${projectTitle}" has unsaved changes. Would you like to save before quitting?`,
+          [
+            { text: 'Keep Drawing', style: 'cancel' },
+            {
+              text: 'Discard & Exit',
+              style: 'destructive',
+              onPress: () => BackHandler.exitApp(),
+            },
+            {
+              text: 'Save & Exit',
+              onPress: async () => {
+                await handleQuickSave();
+                BackHandler.exitApp();
+              },
+            },
+          ]
+        );
+        return true;
+      }
+      return false; // Exit app normally
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [
+    isCropModeActive,
+    colorPickerVisible,
+    gridSettingsVisible,
+    galleryVisible,
+    shareModalVisible,
+    saveOptionsVisible,
+    versionHistoryVisible,
+    isDirty,
+    paths.length,
+    projectTitle,
+    handleQuickSave,
+  ]);
+
   const canvasWidth = canvasRef.current?.dimensions.width || 360;
   const canvasHeight = canvasRef.current?.dimensions.height || 600;
 
@@ -421,7 +610,7 @@ export default function App() {
         <HeaderBar
           title={projectTitle}
           versionNumber={versionNumber}
-          onChangeTitle={setProjectTitle}
+          onChangeTitle={handleTitleChange}
           onNew={handleNewDoodle}
           onSave={() => setSaveOptionsVisible(true)}
           onOpenVersionHistory={() => setVersionHistoryVisible(true)}
@@ -440,7 +629,7 @@ export default function App() {
           <Canvas
             ref={canvasRef}
             paths={paths}
-            onAddPath={addPath}
+            onAddPath={handleAddPath}
             activeTool={activeTool}
             activeColor={activeColor}
             strokeWidth={strokeWidth}
@@ -469,8 +658,8 @@ export default function App() {
           onChangeStrokeWidth={setStrokeWidth}
           canUndo={canUndo}
           canRedo={canRedo}
-          onUndo={undo}
-          onRedo={redo}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
           onClear={handleClearWithConfirm}
           onSelectQuickColor={handleSelectColor}
         />
@@ -487,7 +676,7 @@ export default function App() {
         <GridSelectorModal
           visible={gridSettingsVisible}
           settings={canvasSettings}
-          onChangeSettings={setCanvasSettings}
+          onChangeSettings={handleCanvasSettingsChange}
           onClose={() => setGridSettingsVisible(false)}
         />
 
@@ -507,7 +696,10 @@ export default function App() {
           onShareFullImage={handleShareFullImage}
           onSaveFullImage={handleSaveFullImage}
           onShareProjectFile={handleShareProjectFile}
-          onStartCropMode={() => setIsCropModeActive(true)}
+          onStartCropMode={() => {
+            canvasRef.current?.resetZoom?.();
+            setIsCropModeActive(true);
+          }}
         />
 
         {/* Save & Versions Options Modal */}
@@ -581,11 +773,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 10,
   },
   busyText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#0F172A',
   },
 });

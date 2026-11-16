@@ -5,6 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { DoodleProject } from '../types/doodle';
 
 const PROJECTS_STORAGE_KEY = '@easy_doodle_projects_v1';
+const AUTORECOVERY_DRAFT_KEY = '@easy_doodle_autorecovery_draft';
 
 /**
  * Get all saved doodle projects from local storage
@@ -89,6 +90,35 @@ export async function shareDoodleFile(project: DoodleProject): Promise<void> {
 }
 
 /**
+ * Import a .doodle file from a given device URI (e.g. from an Android Intent / linked URL)
+ */
+export async function importDoodleFromUri(uri: string): Promise<DoodleProject | null> {
+  try {
+    const fileContent = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    const parsed = JSON.parse(fileContent);
+
+    if (!parsed || !Array.isArray(parsed.paths) || !parsed.canvasSettings) {
+      throw new Error('File does not appear to be a valid .doodle file');
+    }
+
+    const importedProject: DoodleProject = {
+      ...parsed,
+      id: `opened_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      title: parsed.title || 'Opened Doodle',
+      updatedAt: Date.now(),
+    };
+
+    await saveProject(importedProject);
+    return importedProject;
+  } catch (err: any) {
+    console.error('Failed to import doodle from uri:', err);
+    throw err;
+  }
+}
+
+/**
  * Import a .doodle file from device storage via document picker
  */
 export async function importDoodleFromFile(): Promise<DoodleProject | null> {
@@ -103,29 +133,50 @@ export async function importDoodleFromFile(): Promise<DoodleProject | null> {
     }
 
     const file = result.assets[0];
-    const fileContent = await FileSystem.readAsStringAsync(file.uri, {
-      encoding: FileSystem.EncodingType.UTF8,
-    });
-
-    const parsed = JSON.parse(fileContent);
-
-    // Validate that it looks like a doodle file
-    if (!parsed || !Array.isArray(parsed.paths) || !parsed.canvasSettings) {
-      throw new Error('Selected file is not a valid Easy Doodle project file');
-    }
-
-    const importedProject: DoodleProject = {
-      ...parsed,
-      id: `imported_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      title: parsed.title ? `${parsed.title} (Imported)` : 'Imported Doodle',
-      updatedAt: Date.now(),
-    };
-
-    await saveProject(importedProject);
-    return importedProject;
+    return await importDoodleFromUri(file.uri);
   } catch (err: any) {
     console.error('Failed to import doodle file:', err);
     throw err;
   }
 }
 
+/**
+ * Word-style Auto-Recovery Draft System:
+ * Keeps an ongoing emergency snapshot of unsaved changes and drawing state
+ */
+export interface AutoRecoveryDraft {
+  project: DoodleProject;
+  isDirty: boolean;
+  timestamp: number;
+}
+
+export async function saveAutoRecoveryDraft(project: DoodleProject, isDirty: boolean): Promise<void> {
+  try {
+    const draft: AutoRecoveryDraft = {
+      project,
+      isDirty,
+      timestamp: Date.now(),
+    };
+    await AsyncStorage.setItem(AUTORECOVERY_DRAFT_KEY, JSON.stringify(draft));
+  } catch (err) {
+    console.warn('Could not save auto-recovery draft:', err);
+  }
+}
+
+export async function getAutoRecoveryDraft(): Promise<AutoRecoveryDraft | null> {
+  try {
+    const raw = await AsyncStorage.getItem(AUTORECOVERY_DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function clearAutoRecoveryDraft(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(AUTORECOVERY_DRAFT_KEY);
+  } catch (err) {
+    console.warn('Could not clear auto-recovery draft:', err);
+  }
+}

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { DoodleVersionSnapshot } from '../types/doodle';
+import { DoodleThumbnail } from './DoodleThumbnail';
 
 interface VersionHistoryModalProps {
   visible: boolean;
@@ -86,27 +87,11 @@ export function VersionHistoryModal({
       <View style={[styles.versionCard, isCurrent && styles.currentVersionCard]}>
         {/* Top Info Header within Card */}
         <View style={styles.cardHeaderRow}>
-          <View
-            style={[
-              styles.versionThumb,
-              { backgroundColor: item.canvasSettings.backgroundColor },
-            ]}
-          >
-            <Text
-              style={[
-                styles.versionThumbText,
-                {
-                  color: ['#1E293B', '#121214', '#0F172A'].includes(
-                    item.canvasSettings.backgroundColor.toUpperCase()
-                  )
-                    ? '#FFFFFF'
-                    : '#0F172A',
-                },
-              ]}
-            >
-              v{item.versionNumber}
-            </Text>
-          </View>
+          <DoodleThumbnail
+            paths={item.paths}
+            backgroundColor={item.canvasSettings.backgroundColor}
+            size={40}
+          />
 
           <View style={styles.versionInfo}>
             <View style={styles.titleLine}>
@@ -347,6 +332,7 @@ const styles = StyleSheet.create({
   },
   versionInfo: {
     flex: 1,
+    marginLeft: 10,
   },
   titleLine: {
     flexDirection: 'row',

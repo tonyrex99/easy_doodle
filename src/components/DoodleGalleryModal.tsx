@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { DoodleProject } from '../types/doodle';
+import { DoodleThumbnail } from './DoodleThumbnail';
 import {
   getSavedProjects,
   deleteProject,
@@ -137,25 +138,14 @@ export function DoodleGalleryModal({
 
     return (
       <View style={[styles.projectCard, isCurrent && styles.currentCard]}>
-        {/* Left Color Preview Indicator */}
-        <View
-          style={[
-            styles.cardThumb,
-            { backgroundColor: item.canvasSettings.backgroundColor },
-          ]}
-        >
-          <Feather
-            name="image"
-            size={20}
-            color={
-              ['#1E293B', '#121214', '#0F172A'].includes(
-                item.canvasSettings.backgroundColor.toUpperCase()
-              )
-                ? '#94A3B8'
-                : '#64748B'
-            }
-          />
-        </View>
+        {/* Visual Live Doodle Thumbnail */}
+        <DoodleThumbnail
+          paths={item.paths}
+          backgroundColor={item.canvasSettings.backgroundColor}
+          size={44}
+          canvasWidth={item.width || 360}
+          canvasHeight={item.height || 600}
+        />
 
         {/* Project Info */}
         <TouchableOpacity
@@ -404,6 +394,7 @@ const styles = StyleSheet.create({
   },
   cardInfo: {
     flex: 1,
+    marginLeft: 10,
     marginRight: 6,
   },
   cardTitle: {
