@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { AppTheme, LIGHT_THEME } from '../constants/theme';
 
 interface SaveOptionsModalProps {
   visible: boolean;
@@ -22,6 +23,7 @@ interface SaveOptionsModalProps {
   onSaveAsVersion: (versionLabel: string, note?: string) => void;
   onSaveAsNewProject: (newTitle: string) => void;
   onOpenVersionHistory: () => void;
+  theme?: AppTheme;
 }
 
 export function SaveOptionsModal({
@@ -34,6 +36,7 @@ export function SaveOptionsModal({
   onSaveAsVersion,
   onSaveAsNewProject,
   onOpenVersionHistory,
+  theme = LIGHT_THEME,
 }: SaveOptionsModalProps) {
   const nextVersion = currentVersionNumber + 1;
   const [showVersionInput, setShowVersionInput] = useState(false);
@@ -84,44 +87,64 @@ export function SaveOptionsModal({
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.surfaceBorder,
+              borderTopWidth: 1,
+            },
+          ]}
+        >
           {/* Drag to dismiss handle */}
           <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
+            <View style={[styles.dragHandle, { backgroundColor: theme.textMuted }]} />
           </View>
 
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Ionicons name="save" size={22} color="#0284C7" />
-              <Text style={styles.title}>Save Doodle</Text>
+              <Ionicons name="save" size={22} color={theme.primary} />
+              <Text style={[styles.title, { color: theme.text }]}>Save Doodle</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#64748B" />
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: theme.surfaceSecondary }]}
+            >
+              <Ionicons name="close" size={22} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {/* Current Project Info */}
-            <View style={styles.projectInfoCard}>
+            <View
+              style={[
+                styles.projectInfoCard,
+                {
+                  backgroundColor: theme.surfaceSecondary,
+                  borderColor: theme.surfaceBorder,
+                },
+              ]}
+            >
               <View style={styles.projectTextCol}>
-                <Text style={styles.projectTitleText} numberOfLines={1}>
+                <Text style={[styles.projectTitleText, { color: theme.text }]} numberOfLines={1}>
                   {projectTitle}
                 </Text>
-                <Text style={styles.versionSubtext}>
+                <Text style={[styles.versionSubtext, { color: theme.textSecondary }]}>
                   Current: Version {currentVersionNumber} • {versionCount} snapshot{versionCount === 1 ? '' : 's'}
                 </Text>
               </View>
               {versionCount > 0 && (
                 <TouchableOpacity
-                  style={styles.historyPillBtn}
+                  style={[styles.historyPillBtn, { backgroundColor: theme.primaryLight }]}
                   onPress={() => {
                     onClose();
                     onOpenVersionHistory();
                   }}
                 >
-                  <MaterialCommunityIcons name="history" size={16} color="#0284C7" />
-                  <Text style={styles.historyPillText}>History</Text>
+                  <MaterialCommunityIcons name="history" size={16} color={theme.primary} />
+                  <Text style={[styles.historyPillText, { color: theme.primary }]}>History</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -131,100 +154,134 @@ export function SaveOptionsModal({
               <View style={styles.optionsList}>
                 {/* Option A: Save as New Version (Recommended) */}
                 <TouchableOpacity
-                  style={[styles.optionCard, styles.recommendedCard]}
+                  style={[
+                    styles.optionCard,
+                    styles.recommendedCard,
+                    {
+                      backgroundColor: theme.surfaceSecondary,
+                      borderColor: theme.primary,
+                    },
+                  ]}
                   onPress={() => setShowVersionInput(true)}
                 >
-                  <View style={[styles.iconCircle, { backgroundColor: '#E0F2FE' }]}>
-                    <MaterialCommunityIcons name="source-branch" size={22} color="#0284C7" />
+                  <View style={[styles.iconCircle, { backgroundColor: theme.primaryLight }]}>
+                    <MaterialCommunityIcons name="source-branch" size={22} color={theme.primary} />
                   </View>
                   <View style={styles.optionDetails}>
                     <View style={styles.optionTitleRow}>
-                      <Text style={styles.optionTitle}>Save as New Version</Text>
-                      <View style={styles.recommendedBadge}>
-                        <Text style={styles.recommendedBadgeText}>RECOMMENDED</Text>
+                      <Text style={[styles.optionTitle, { color: theme.text }]}>Save as New Version</Text>
+                      <View style={[styles.recommendedBadge, { backgroundColor: theme.primaryLight }]}>
+                        <Text style={[styles.recommendedBadgeText, { color: theme.primary }]}>RECOMMENDED</Text>
                       </View>
                     </View>
-                    <Text style={styles.optionDesc}>
+                    <Text style={[styles.optionDesc, { color: theme.textSecondary }]}>
                       Creates Version {nextVersion} with date stamp so you can revert anytime
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                  <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
 
                 {/* Option B: Quick Overwrite Save */}
                 <TouchableOpacity
-                  style={styles.optionCard}
+                  style={[
+                    styles.optionCard,
+                    {
+                      backgroundColor: theme.surfaceSecondary,
+                      borderColor: theme.surfaceBorder,
+                    },
+                  ]}
                   onPress={() => {
                     onClose();
                     onQuickSave();
                   }}
                 >
-                  <View style={[styles.iconCircle, { backgroundColor: '#F1F5F9' }]}>
-                    <Ionicons name="checkmark-done" size={20} color="#475569" />
+                  <View style={[styles.iconCircle, { backgroundColor: theme.cardBg }]}>
+                    <Ionicons name="checkmark-done" size={20} color={theme.primary} />
                   </View>
                   <View style={styles.optionDetails}>
-                    <Text style={styles.optionTitle}>Quick Save</Text>
-                    <Text style={styles.optionDesc}>
+                    <Text style={[styles.optionTitle, { color: theme.text }]}>Quick Save</Text>
+                    <Text style={[styles.optionDesc, { color: theme.textSecondary }]}>
                       Updates current version ({currentVersionNumber}) directly
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                  <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
 
                 {/* Option C: Save as Separate Project */}
                 <TouchableOpacity
-                  style={styles.optionCard}
+                  style={[
+                    styles.optionCard,
+                    {
+                      backgroundColor: theme.surfaceSecondary,
+                      borderColor: theme.surfaceBorder,
+                    },
+                  ]}
                   onPress={() => {
                     onClose();
                     onSaveAsNewProject(`${projectTitle} (Copy)`);
                   }}
                 >
-                  <View style={[styles.iconCircle, { backgroundColor: '#F3E8FF' }]}>
+                  <View style={[styles.iconCircle, { backgroundColor: theme.cardBg }]}>
                     <Ionicons name="copy-outline" size={20} color="#9333EA" />
                   </View>
                   <View style={styles.optionDetails}>
-                    <Text style={styles.optionTitle}>Save as Separate Copy</Text>
-                    <Text style={styles.optionDesc}>
+                    <Text style={[styles.optionTitle, { color: theme.text }]}>Save as Separate Copy</Text>
+                    <Text style={[styles.optionDesc, { color: theme.textSecondary }]}>
                       Clones current drawing into a brand new doodle file
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                  <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
             ) : (
               /* Custom Version Label Form */
               <View style={styles.versionInputContainer}>
-                <Text style={styles.inputLabel}>Version Label</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Version Label</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: theme.surfaceSecondary,
+                      borderColor: theme.surfaceBorder,
+                      color: theme.text,
+                    },
+                  ]}
                   value={versionLabel}
                   onChangeText={setVersionLabel}
                   placeholder={`e.g. ${projectTitle} v${nextVersion}`}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.textMuted}
                   autoFocus
                 />
 
-                <Text style={[styles.inputLabel, { marginTop: 10 }]}>Version Note (Optional)</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 10 }]}>Version Note (Optional)</Text>
                 <TextInput
-                  style={[styles.textInput, styles.noteInput]}
+                  style={[
+                    styles.textInput,
+                    styles.noteInput,
+                    {
+                      backgroundColor: theme.surfaceSecondary,
+                      borderColor: theme.surfaceBorder,
+                      color: theme.text,
+                    },
+                  ]}
                   value={versionNote}
                   onChangeText={setVersionNote}
                   placeholder="e.g. Added background shading and line details"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.textMuted}
                   multiline
                   numberOfLines={2}
                 />
 
                 <View style={styles.inputActionsRow}>
                   <TouchableOpacity
-                    style={styles.backBtn}
+                    style={[styles.backBtn, { backgroundColor: theme.surfaceSecondary, borderColor: theme.surfaceBorder }]}
                     onPress={() => setShowVersionInput(false)}
                   >
-                    <Text style={styles.backBtnText}>Back</Text>
+                    <Text style={[styles.backBtnText, { color: theme.text }]}>Back</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.confirmVersionBtn}
+                    style={[styles.confirmVersionBtn, { backgroundColor: theme.primary }]}
                     onPress={() => {
                       onClose();
                       onSaveAsVersion(versionLabel.trim() || `${projectTitle} v${nextVersion}`, versionNote.trim());

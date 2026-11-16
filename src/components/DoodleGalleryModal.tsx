@@ -21,6 +21,7 @@ import {
   importDoodleFromFile,
   saveProject,
 } from '../utils/fileSystem';
+import { AppTheme, LIGHT_THEME } from '../constants/theme';
 
 interface DoodleGalleryModalProps {
   visible: boolean;
@@ -28,6 +29,7 @@ interface DoodleGalleryModalProps {
   onOpenProject: (project: DoodleProject) => void;
   onClose: () => void;
   onNewDoodle: () => void;
+  theme?: AppTheme;
 }
 
 export function DoodleGalleryModal({
@@ -36,6 +38,7 @@ export function DoodleGalleryModal({
   onOpenProject,
   onClose,
   onNewDoodle,
+  theme = LIGHT_THEME,
 }: DoodleGalleryModalProps) {
   const [projects, setProjects] = useState<DoodleProject[]>([]);
   const [loading, setLoading] = useState(false);
@@ -137,7 +140,16 @@ export function DoodleGalleryModal({
     const isCurrent = item.id === currentProjectId;
 
     return (
-      <View style={[styles.projectCard, isCurrent && styles.currentCard]}>
+      <View
+        style={[
+          styles.projectCard,
+          {
+            backgroundColor: theme.surfaceSecondary,
+            borderColor: isCurrent ? theme.primary : theme.surfaceBorder,
+          },
+          isCurrent && { borderWidth: 2 },
+        ]}
+      >
         {/* Visual Live Doodle Thumbnail */}
         <DoodleThumbnail
           paths={item.paths}
@@ -156,12 +168,21 @@ export function DoodleGalleryModal({
           }}
         >
           <View style={styles.titleRow}>
-            <Text style={styles.cardTitle} numberOfLines={1}>
+            <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
               {item.title}
             </Text>
-            {isCurrent && <Text style={styles.currentBadge}>ACTIVE</Text>}
+            {isCurrent && (
+              <Text
+                style={[
+                  styles.currentBadge,
+                  { backgroundColor: theme.primaryLight, color: theme.primary },
+                ]}
+              >
+                ACTIVE
+              </Text>
+            )}
           </View>
-          <Text style={styles.cardMeta} numberOfLines={1}>
+          <Text style={[styles.cardMeta, { color: theme.textSecondary }]} numberOfLines={1}>
             {formatDate(item.updatedAt)} • {item.paths.length} strokes
           </Text>
         </TouchableOpacity>
@@ -169,23 +190,23 @@ export function DoodleGalleryModal({
         {/* Action Buttons: strictly bounded with shrink to prevent offscreen overflow */}
         <View style={styles.cardActions}>
           <TouchableOpacity
-            style={styles.actionIconBtn}
+            style={[styles.actionIconBtn, { backgroundColor: theme.surface }]}
             onPress={() => handleShareFile(item)}
             accessibilityLabel="Share File"
           >
-            <Ionicons name="share-social-outline" size={16} color="#0284C7" />
+            <Ionicons name="share-social-outline" size={16} color={theme.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionIconBtn}
+            style={[styles.actionIconBtn, { backgroundColor: theme.surface }]}
             onPress={() => handleDuplicate(item)}
             accessibilityLabel="Duplicate"
           >
-            <Ionicons name="copy-outline" size={16} color="#64748B" />
+            <Ionicons name="copy-outline" size={16} color={theme.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionIconBtn, styles.deleteBtn]}
+            style={[styles.actionIconBtn, styles.deleteBtn, { backgroundColor: theme.surface }]}
             onPress={() => handleDelete(item)}
             accessibilityLabel="Delete"
           >
@@ -209,35 +230,53 @@ export function DoodleGalleryModal({
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.surfaceBorder,
+              borderTopWidth: 1,
+            },
+          ]}
+        >
           {/* Drag to dismiss pill */}
           <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
+            <View style={[styles.dragHandle, { backgroundColor: theme.textMuted }]} />
           </View>
 
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Ionicons name="folder-open" size={22} color="#0284C7" />
-              <Text style={styles.title}>My Doodles & Files</Text>
+              <Ionicons name="folder-open" size={22} color={theme.primary} />
+              <Text style={[styles.title, { color: theme.text }]}>My Doodles & Files</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#64748B" />
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: theme.surfaceSecondary }]}
+            >
+              <Ionicons name="close" size={22} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
 
           {/* Action Row: Import External File & New */}
           <View style={styles.topActionsRow}>
             <TouchableOpacity
-              style={styles.importBtn}
+              style={[
+                styles.importBtn,
+                {
+                  backgroundColor: theme.surfaceSecondary,
+                  borderColor: theme.surfaceBorder,
+                },
+              ]}
               onPress={handleImport}
             >
-              <Ionicons name="document-attach-outline" size={17} color="#0284C7" />
-              <Text style={styles.importBtnText}>Open .doodle</Text>
+              <Ionicons name="document-attach-outline" size={17} color={theme.primary} />
+              <Text style={[styles.importBtnText, { color: theme.primary }]}>Open .doodle</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.newBtn}
+              style={[styles.newBtn, { backgroundColor: theme.primary }]}
               onPress={() => {
                 onNewDoodle();
                 onClose();
@@ -250,12 +289,12 @@ export function DoodleGalleryModal({
 
           {/* List of projects */}
           {loading ? (
-            <ActivityIndicator size="large" color="#0284C7" style={{ marginVertical: 40 }} />
+            <ActivityIndicator size="large" color={theme.primary} style={{ marginVertical: 40 }} />
           ) : projects.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Feather name="folder" size={44} color="#CBD5E1" />
-              <Text style={styles.emptyTitle}>No Doodles Saved Yet</Text>
-              <Text style={styles.emptySubtitle}>
+              <Feather name="folder" size={44} color={theme.textMuted} />
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Doodles Saved Yet</Text>
+              <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
                 Draw something awesome and tap Save, or import a .doodle file to get started!
               </Text>
             </View>

@@ -7,6 +7,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { AppTheme } from '../constants/theme';
 
 interface HeaderBarProps {
   title: string;
@@ -20,6 +21,7 @@ interface HeaderBarProps {
   onStartCrop: () => void;
   onOpenShareModal: () => void;
   isCropModeActive?: boolean;
+  theme: AppTheme;
 }
 
 export function HeaderBar({
@@ -34,26 +36,43 @@ export function HeaderBar({
   onStartCrop,
   onOpenShareModal,
   isCropModeActive,
+  theme,
 }: HeaderBarProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   return (
-    <View style={styles.wrapper}>
+    <View
+      style={[
+        styles.wrapper,
+        {
+          backgroundColor: theme.headerBg,
+          borderBottomColor: theme.divider,
+        },
+      ]}
+    >
       {/* Top Row: App Logo, Doodle Title, Version Pill, and New Doodle */}
       <View style={styles.topRow}>
         <View style={styles.titleGroup}>
-          <View style={styles.logoBadge}>
+          <View style={[styles.logoBadge, { backgroundColor: theme.primary }]}>
             <MaterialCommunityIcons name="draw" size={18} color="#FFFFFF" />
           </View>
 
           {/* Editable Title with Pencil Icon */}
-          <View style={styles.titleInputContainer}>
+          <View
+            style={[
+              styles.titleInputContainer,
+              {
+                backgroundColor: theme.surfaceSecondary,
+                borderColor: theme.surfaceBorder,
+              },
+            ]}
+          >
             <TextInput
-              style={styles.titleInput}
+              style={[styles.titleInput, { color: theme.text }]}
               value={title}
               onChangeText={onChangeTitle}
               placeholder="Untitled Doodle"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.textMuted}
               maxLength={28}
               onFocus={() => setIsEditingTitle(true)}
               onBlur={() => setIsEditingTitle(false)}
@@ -61,7 +80,7 @@ export function HeaderBar({
             <Feather
               name="edit-3"
               size={14}
-              color={isEditingTitle ? '#0284C7' : '#94A3B8'}
+              color={isEditingTitle ? theme.primary : theme.textMuted}
               style={styles.editIcon}
             />
           </View>
@@ -70,16 +89,29 @@ export function HeaderBar({
         {/* Right Info: Version Pill & New Doodle */}
         <View style={styles.topRightGroup}>
           <TouchableOpacity
-            style={styles.versionBadge}
+            style={[
+              styles.versionBadge,
+              {
+                backgroundColor: theme.primaryLight,
+                borderColor: theme.surfaceBorder,
+              },
+            ]}
             onPress={onOpenVersionHistory}
             accessibilityLabel="Version History"
           >
-            <MaterialCommunityIcons name="source-branch" size={13} color="#0284C7" />
-            <Text style={styles.versionBadgeText}>v{versionNumber}</Text>
+            <MaterialCommunityIcons name="source-branch" size={13} color={theme.primary} />
+            <Text style={[styles.versionBadgeText, { color: theme.primary }]}>v{versionNumber}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.newDoodleBtn}
+            style={[
+              styles.newDoodleBtn,
+              {
+                backgroundColor: theme.isDark ? theme.surfaceSecondary : '#0F172A',
+                borderWidth: theme.isDark ? 1 : 0,
+                borderColor: theme.surfaceBorder,
+              },
+            ]}
             onPress={onNew}
             accessibilityLabel="Create New Doodle"
           >
@@ -92,55 +124,58 @@ export function HeaderBar({
       {/* Bottom Action Ribbon: Quick Actions */}
       <View style={styles.actionRibbon}>
         <TouchableOpacity
-          style={styles.actionPillBtn}
+          style={[styles.actionPillBtn, { backgroundColor: theme.surfaceSecondary }]}
           onPress={onSave}
           accessibilityLabel="Save & Versions"
         >
-          <Ionicons name="save-outline" size={16} color="#0F172A" />
-          <Text style={styles.actionBtnLabel}>Save</Text>
+          <Ionicons name="save-outline" size={16} color={theme.text} />
+          <Text style={[styles.actionBtnLabel, { color: theme.text }]}>Save</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionPillBtn}
+          style={[styles.actionPillBtn, { backgroundColor: theme.surfaceSecondary }]}
           onPress={onOpenVersionHistory}
           accessibilityLabel="Version History"
         >
-          <MaterialCommunityIcons name="history" size={17} color="#0284C7" />
-          <Text style={[styles.actionBtnLabel, { color: '#0284C7' }]}>Versions</Text>
+          <MaterialCommunityIcons name="history" size={17} color={theme.primary} />
+          <Text style={[styles.actionBtnLabel, { color: theme.primary }]}>Versions</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionPillBtn}
+          style={[styles.actionPillBtn, { backgroundColor: theme.surfaceSecondary }]}
           onPress={onOpenGallery}
           accessibilityLabel="Files & Gallery"
         >
-          <Ionicons name="folder-open-outline" size={16} color="#0F172A" />
-          <Text style={styles.actionBtnLabel}>Files</Text>
+          <Ionicons name="folder-open-outline" size={16} color={theme.text} />
+          <Text style={[styles.actionBtnLabel, { color: theme.text }]}>Files</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionPillBtn}
+          style={[styles.actionPillBtn, { backgroundColor: theme.surfaceSecondary }]}
           onPress={onToggleGridSettings}
           accessibilityLabel="Grid & Paper"
         >
-          <MaterialCommunityIcons name="grid" size={16} color="#0F172A" />
-          <Text style={styles.actionBtnLabel}>Grid</Text>
+          <MaterialCommunityIcons name="grid" size={16} color={theme.text} />
+          <Text style={[styles.actionBtnLabel, { color: theme.text }]}>Grid</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionPillBtn, isCropModeActive && styles.cropActivePill]}
+          style={[
+            styles.actionPillBtn,
+            { backgroundColor: isCropModeActive ? theme.primary : theme.surfaceSecondary },
+          ]}
           onPress={onStartCrop}
           accessibilityLabel="Area Screen Grab"
         >
           <Ionicons
             name="crop-outline"
             size={16}
-            color={isCropModeActive ? '#FFFFFF' : '#0284C7'}
+            color={isCropModeActive ? '#FFFFFF' : theme.primary}
           />
           <Text
             style={[
               styles.actionBtnLabel,
-              isCropModeActive ? { color: '#FFFFFF' } : { color: '#0284C7' },
+              { color: isCropModeActive ? '#FFFFFF' : theme.primary },
             ]}
           >
             Snip
@@ -148,7 +183,7 @@ export function HeaderBar({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.sharePillBtn}
+          style={[styles.sharePillBtn, { backgroundColor: theme.primary }]}
           onPress={onOpenShareModal}
           accessibilityLabel="Share Doodle"
         >

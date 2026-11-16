@@ -21,3 +21,4 @@ Library,expo-sharing,Social Sharing,MIT License,"~58.0.23","Invokes native Andro
 Library,expo-media-library,Gallery Saving,MIT License,"~58.0.14","Saves drawings directly to user's device photo album."
 Library,expo-document-picker,File Picker,MIT License,"~58.0.5","Allows user to select and import .doodle vector files."
 Library,@react-native-async-storage/async-storage,Storage,MIT License,"2.2.0","Stores project metadata, version history, and auto-recovery drafts locally."
+

@@ -9,6 +9,7 @@ import {
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { DrawingTool } from '../types/doodle';
 import { STROKE_WIDTH_PRESETS } from '../constants/colors';
+import { AppTheme } from '../constants/theme';
 
 interface ToolBarProps {
   activeTool: DrawingTool;
@@ -23,6 +24,7 @@ interface ToolBarProps {
   onRedo: () => void;
   onClear: () => void;
   onSelectQuickColor: (color: string) => void;
+  theme: AppTheme;
 }
 
 // Purple (#A349A4) removed per user request, replaced with transparent & vivid primary paints
@@ -52,6 +54,7 @@ export function ToolBar({
   onRedo,
   onClear,
   onSelectQuickColor,
+  theme,
 }: ToolBarProps) {
   const [showShapeMenu, setShowShapeMenu] = useState(false);
   const [showSizeMenu, setShowSizeMenu] = useState(false);
@@ -84,68 +87,148 @@ export function ToolBar({
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.toolbarBg,
+          borderTopColor: theme.divider,
+        },
+      ]}
+    >
       {/* Pop-up Shape Selection Submenu */}
       {showShapeMenu && (
-        <View style={styles.submenu}>
+        <View
+          style={[
+            styles.submenu,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.surfaceBorder,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={[styles.subBtn, activeTool === 'line' && styles.subBtnActive]}
+            style={[
+              styles.subBtn,
+              activeTool === 'line' && { backgroundColor: theme.primaryLight },
+            ]}
             onPress={() => {
               onSelectTool('line');
               setShowShapeMenu(false);
             }}
           >
-            <Ionicons name="remove-outline" size={20} color="#0F172A" />
-            <Text style={styles.subBtnText}>Line</Text>
+            <Ionicons
+              name="remove-outline"
+              size={20}
+              color={activeTool === 'line' ? theme.primary : theme.text}
+            />
+            <Text
+              style={[
+                styles.subBtnText,
+                { color: activeTool === 'line' ? theme.primary : theme.text },
+              ]}
+            >
+              Line
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.subBtn, activeTool === 'rectangle' && styles.subBtnActive]}
+            style={[
+              styles.subBtn,
+              activeTool === 'rectangle' && { backgroundColor: theme.primaryLight },
+            ]}
             onPress={() => {
               onSelectTool('rectangle');
               setShowShapeMenu(false);
             }}
           >
-            <Ionicons name="square-outline" size={20} color="#0F172A" />
-            <Text style={styles.subBtnText}>Rect</Text>
+            <Ionicons
+              name="square-outline"
+              size={20}
+              color={activeTool === 'rectangle' ? theme.primary : theme.text}
+            />
+            <Text
+              style={[
+                styles.subBtnText,
+                { color: activeTool === 'rectangle' ? theme.primary : theme.text },
+              ]}
+            >
+              Rect
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.subBtn, activeTool === 'circle' && styles.subBtnActive]}
+            style={[
+              styles.subBtn,
+              activeTool === 'circle' && { backgroundColor: theme.primaryLight },
+            ]}
             onPress={() => {
               onSelectTool('circle');
               setShowShapeMenu(false);
             }}
           >
-            <Ionicons name="ellipse-outline" size={20} color="#0F172A" />
-            <Text style={styles.subBtnText}>Circle</Text>
+            <Ionicons
+              name="ellipse-outline"
+              size={20}
+              color={activeTool === 'circle' ? theme.primary : theme.text}
+            />
+            <Text
+              style={[
+                styles.subBtnText,
+                { color: activeTool === 'circle' ? theme.primary : theme.text },
+              ]}
+            >
+              Circle
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.subBtn, activeTool === 'arrow' && styles.subBtnActive]}
+            style={[
+              styles.subBtn,
+              activeTool === 'arrow' && { backgroundColor: theme.primaryLight },
+            ]}
             onPress={() => {
               onSelectTool('arrow');
               setShowShapeMenu(false);
             }}
           >
-            <Ionicons name="arrow-forward-outline" size={20} color="#0F172A" />
-            <Text style={styles.subBtnText}>Arrow</Text>
+            <Ionicons
+              name="arrow-forward-outline"
+              size={20}
+              color={activeTool === 'arrow' ? theme.primary : theme.text}
+            />
+            <Text
+              style={[
+                styles.subBtnText,
+                { color: activeTool === 'arrow' ? theme.primary : theme.text },
+              ]}
+            >
+              Arrow
+            </Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Pop-up Size Selection Submenu */}
       {showSizeMenu && (
-        <View style={styles.submenuSize}>
-          <Text style={styles.sizeTitle}>Stroke Size</Text>
+        <View
+          style={[
+            styles.submenuSize,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.surfaceBorder,
+            },
+          ]}
+        >
+          <Text style={[styles.sizeTitle, { color: theme.text }]}>Stroke Size</Text>
           <View style={styles.sizeRow}>
-            {STROROKE_PRESETS(activeColor, strokeWidth, onChangeStrokeWidth, setShowSizeMenu)}
+            {STROROKE_PRESETS(activeColor, strokeWidth, onChangeStrokeWidth, setShowSizeMenu, theme)}
           </View>
         </View>
       )}
 
       {/* Top Strip: Quick Color Swatches + Transparent + Palette Picker at back */}
-      <View style={styles.colorRibbon}>
+      <View style={[styles.colorRibbon, { borderBottomColor: theme.divider }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -164,12 +247,20 @@ export function ToolBar({
                   style={[
                     styles.ribbonSwatch,
                     styles.transparentSwatch,
-                    isSelected && styles.ribbonSwatchSelected,
+                    {
+                      backgroundColor: theme.surfaceSecondary,
+                      borderColor: theme.surfaceBorder,
+                    },
+                    isSelected && {
+                      borderColor: theme.primary,
+                      borderWidth: 3,
+                      transform: [{ scale: 1.15 }],
+                    },
                   ]}
                   onPress={() => onSelectQuickColor('transparent')}
                   accessibilityLabel="Transparent / Erase"
                 >
-                  <MaterialCommunityIcons name="circle-off-outline" size={16} color="#64748B" />
+                  <MaterialCommunityIcons name="circle-off-outline" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
               );
             }
@@ -180,8 +271,12 @@ export function ToolBar({
                 style={[
                   styles.ribbonSwatch,
                   { backgroundColor: col },
-                  col === '#FFFFFF' && styles.whiteSwatchBorder,
-                  isSelected && styles.ribbonSwatchSelected,
+                  col === '#FFFFFF' && { borderColor: theme.surfaceBorder },
+                  isSelected && {
+                    borderColor: theme.primary,
+                    borderWidth: 3,
+                    transform: [{ scale: 1.15 }],
+                  },
                 ]}
                 onPress={() => onSelectQuickColor(col)}
               />
@@ -190,11 +285,17 @@ export function ToolBar({
 
           {/* Color Palette / Custom Picker Button at back */}
           <TouchableOpacity
-            style={styles.moreColorBtn}
+            style={[
+              styles.moreColorBtn,
+              {
+                backgroundColor: theme.primaryLight,
+                borderColor: theme.surfaceBorder,
+              },
+            ]}
             onPress={onOpenColorPicker}
             accessibilityLabel="More Colors / Custom Palette"
           >
-            <Ionicons name="color-palette" size={19} color="#0284C7" />
+            <Ionicons name="color-palette" size={19} color={theme.primary} />
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -204,88 +305,116 @@ export function ToolBar({
         {/* Undo / Redo */}
         <View style={styles.historyGroup}>
           <TouchableOpacity
-            style={[styles.iconBtn, !canUndo && styles.disabledBtn]}
+            style={[
+              styles.iconBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              !canUndo && styles.disabledBtn,
+            ]}
             onPress={onUndo}
             disabled={!canUndo}
           >
             <Ionicons
               name="arrow-undo-outline"
               size={19}
-              color={canUndo ? '#0F172A' : '#CBD5E1'}
+              color={canUndo ? theme.text : theme.textMuted}
             />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.iconBtn, !canRedo && styles.disabledBtn]}
+            style={[
+              styles.iconBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              !canRedo && styles.disabledBtn,
+            ]}
             onPress={onRedo}
             disabled={!canRedo}
           >
             <Ionicons
               name="arrow-redo-outline"
               size={19}
-              color={canRedo ? '#0F172A' : '#CBD5E1'}
+              color={canRedo ? theme.text : theme.textMuted}
             />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
         {/* Tools: Pen, Brush, Highlighter, Eraser */}
         <View style={styles.toolGroup}>
           {/* Pen */}
           <TouchableOpacity
-            style={[styles.toolBtn, activeTool === 'pen' && styles.toolBtnActive]}
+            style={[
+              styles.toolBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              activeTool === 'pen' && { backgroundColor: theme.primary },
+            ]}
             onPress={() => toggleTool('pen')}
             accessibilityLabel="Pen"
           >
             <Feather
               name="edit-2"
               size={18}
-              color={activeTool === 'pen' ? '#FFFFFF' : '#475569'}
+              color={activeTool === 'pen' ? '#FFFFFF' : theme.textSecondary}
             />
           </TouchableOpacity>
 
           {/* Artistic Brush */}
           <TouchableOpacity
-            style={[styles.toolBtn, activeTool === 'brush' && styles.toolBtnActive]}
+            style={[
+              styles.toolBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              activeTool === 'brush' && { backgroundColor: theme.primary },
+            ]}
             onPress={() => toggleTool('brush')}
             accessibilityLabel="Art Brush"
           >
             <MaterialCommunityIcons
               name="brush"
               size={20}
-              color={activeTool === 'brush' ? '#FFFFFF' : '#475569'}
+              color={activeTool === 'brush' ? '#FFFFFF' : theme.textSecondary}
             />
           </TouchableOpacity>
 
           {/* Highlighter */}
           <TouchableOpacity
-            style={[styles.toolBtn, activeTool === 'highlighter' && styles.toolBtnActive]}
+            style={[
+              styles.toolBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              activeTool === 'highlighter' && { backgroundColor: theme.primary },
+            ]}
             onPress={() => toggleTool('highlighter')}
             accessibilityLabel="Highlighter"
           >
             <MaterialCommunityIcons
               name="marker"
               size={20}
-              color={activeTool === 'highlighter' ? '#FFFFFF' : '#475569'}
+              color={activeTool === 'highlighter' ? '#FFFFFF' : theme.textSecondary}
             />
           </TouchableOpacity>
 
           {/* Eraser */}
           <TouchableOpacity
-            style={[styles.toolBtn, activeTool === 'eraser' && styles.toolBtnActive]}
+            style={[
+              styles.toolBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              activeTool === 'eraser' && { backgroundColor: theme.primary },
+            ]}
             onPress={() => toggleTool('eraser')}
             accessibilityLabel="Eraser"
           >
             <MaterialCommunityIcons
               name="eraser"
               size={20}
-              color={activeTool === 'eraser' ? '#FFFFFF' : '#475569'}
+              color={activeTool === 'eraser' ? '#FFFFFF' : theme.textSecondary}
             />
           </TouchableOpacity>
 
           {/* Shapes Menu */}
           <TouchableOpacity
-            style={[styles.toolBtn, isShapeActive && styles.toolBtnActive]}
+            style={[
+              styles.toolBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              isShapeActive && { backgroundColor: theme.primary },
+            ]}
             onPress={() => {
               setShowShapeMenu((prev) => !prev);
               setShowSizeMenu(false);
@@ -295,17 +424,25 @@ export function ToolBar({
             <Ionicons
               name={getShapeIcon()}
               size={18}
-              color={isShapeActive ? '#FFFFFF' : '#475569'}
+              color={isShapeActive ? '#FFFFFF' : theme.textSecondary}
             />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
         {/* Right Controls: Stroke Size & Clear */}
         <View style={styles.rightGroup}>
           <TouchableOpacity
-            style={[styles.sizeBtn, showSizeMenu && styles.sizeBtnActive]}
+            style={[
+              styles.sizeBtn,
+              { backgroundColor: theme.surfaceSecondary },
+              showSizeMenu && {
+                backgroundColor: theme.primaryLight,
+                borderColor: theme.primary,
+                borderWidth: 1,
+              },
+            ]}
             onPress={() => {
               setShowSizeMenu((prev) => !prev);
               setShowShapeMenu(false);
@@ -319,15 +456,15 @@ export function ToolBar({
                   width: Math.min(18, Math.max(6, strokeWidth * 0.9)),
                   height: Math.min(18, Math.max(6, strokeWidth * 0.9)),
                   backgroundColor:
-                    activeColor === 'transparent' ? '#64748B' : activeColor,
+                    activeColor === 'transparent' ? theme.textMuted : activeColor,
                 },
               ]}
             />
-            <Text style={styles.sizeBtnText}>{strokeWidth}px</Text>
+            <Text style={[styles.sizeBtnText, { color: theme.text }]}>{strokeWidth}px</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.iconBtn}
+            style={[styles.iconBtn, { backgroundColor: theme.surfaceSecondary }]}
             onPress={onClear}
             accessibilityLabel="Clear Canvas"
           >
@@ -343,14 +480,20 @@ function STROROKE_PRESETS(
   activeColor: string,
   strokeWidth: number,
   onChangeStrokeWidth: (w: number) => void,
-  setShowSizeMenu: (s: boolean) => void
+  setShowSizeMenu: (s: boolean) => void,
+  theme: AppTheme
 ) {
   return STROKE_WIDTH_PRESETS.map((preset) => (
     <TouchableOpacity
       key={preset.label}
       style={[
         styles.sizeOption,
-        strokeWidth === preset.value && styles.sizeOptionActive,
+        { backgroundColor: theme.surfaceSecondary },
+        strokeWidth === preset.value && {
+          backgroundColor: theme.primaryLight,
+          borderColor: theme.primary,
+          borderWidth: 1,
+        },
       ]}
       onPress={() => {
         onChangeStrokeWidth(preset.value);
@@ -363,11 +506,11 @@ function STROROKE_PRESETS(
           {
             width: Math.min(26, preset.value * 1.2 + 4),
             height: Math.min(26, preset.value * 1.2 + 4),
-            backgroundColor: activeColor === 'transparent' ? '#64748B' : activeColor,
+            backgroundColor: activeColor === 'transparent' ? theme.textMuted : activeColor,
           },
         ]}
       />
-      <Text style={styles.sizeLabel}>{preset.label}</Text>
+      <Text style={[styles.sizeLabel, { color: theme.textSecondary }]}>{preset.label}</Text>
     </TouchableOpacity>
   ));
 }

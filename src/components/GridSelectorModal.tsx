@@ -9,14 +9,22 @@ import {
   TouchableWithoutFeedback,
   PanResponder,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { CanvasSettings, GridType } from '../types/doodle';
-import { CANVAS_BACKGROUND_PRESETS } from '../constants/colors';
+import {
+  CANVAS_BACKGROUND_PRESETS,
+  DEFAULT_CANVAS_SETTINGS_LIGHT,
+  DEFAULT_CANVAS_SETTINGS_DARK,
+} from '../constants/colors';
+import { ThemeMode, AppTheme } from '../constants/theme';
 
 interface GridSelectorModalProps {
   visible: boolean;
   settings: CanvasSettings;
   onChangeSettings: (newSettings: CanvasSettings) => void;
+  themeMode: ThemeMode;
+  onChangeThemeMode: (mode: ThemeMode) => void;
+  theme: AppTheme;
   onClose: () => void;
 }
 
@@ -44,6 +52,9 @@ export function GridSelectorModal({
   visible,
   settings,
   onChangeSettings,
+  themeMode,
+  onChangeThemeMode,
+  theme,
   onClose,
 }: GridSelectorModalProps) {
   const isDarkBackground = ['#1E293B', '#121214', '#0F172A'].includes(
@@ -76,25 +87,173 @@ export function GridSelectorModal({
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.surfaceBorder,
+            },
+          ]}
+        >
           {/* Drag to dismiss handle */}
           <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
+            <View style={[styles.dragHandle, { backgroundColor: theme.textMuted }]} />
           </View>
 
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <MaterialCommunityIcons name="grid-large" size={24} color="#0284C7" />
-              <Text style={styles.title}>Canvas & Grid Settings</Text>
+              <MaterialCommunityIcons name="cog-outline" size={24} color={theme.primary} />
+              <Text style={[styles.title, { color: theme.text }]}>Settings & Canvas Grid</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#64748B" />
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: theme.surfaceSecondary }]}
+            >
+              <Ionicons name="close" size={22} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* App Theme Mode Selector */}
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              App Appearance (Theme)
+            </Text>
+            <View style={styles.themeSelectorRow}>
+              {/* Match System */}
+              <TouchableOpacity
+                style={[
+                  styles.themeOptionBtn,
+                  {
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: theme.surfaceBorder,
+                  },
+                  themeMode === 'system' && {
+                    borderColor: theme.primary,
+                    backgroundColor: theme.primaryLight,
+                  },
+                ]}
+                onPress={() => onChangeThemeMode('system')}
+              >
+                <Feather
+                  name="smartphone"
+                  size={18}
+                  color={themeMode === 'system' ? theme.primary : theme.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    { color: theme.text },
+                    themeMode === 'system' && { color: theme.primary, fontWeight: '800' },
+                  ]}
+                >
+                  System
+                </Text>
+              </TouchableOpacity>
+
+              {/* Light Mode */}
+              <TouchableOpacity
+                style={[
+                  styles.themeOptionBtn,
+                  {
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: theme.surfaceBorder,
+                  },
+                  themeMode === 'light' && {
+                    borderColor: theme.primary,
+                    backgroundColor: theme.primaryLight,
+                  },
+                ]}
+                onPress={() => onChangeThemeMode('light')}
+              >
+                <Feather
+                  name="sun"
+                  size={18}
+                  color={themeMode === 'light' ? theme.primary : theme.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    { color: theme.text },
+                    themeMode === 'light' && { color: theme.primary, fontWeight: '800' },
+                  ]}
+                >
+                  Light
+                </Text>
+              </TouchableOpacity>
+
+              {/* Dark Mode */}
+              <TouchableOpacity
+                style={[
+                  styles.themeOptionBtn,
+                  {
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: theme.surfaceBorder,
+                  },
+                  themeMode === 'dark' && {
+                    borderColor: theme.primary,
+                    backgroundColor: theme.primaryLight,
+                  },
+                ]}
+                onPress={() => onChangeThemeMode('dark')}
+              >
+                <Feather
+                  name="moon"
+                  size={18}
+                  color={themeMode === 'dark' ? theme.primary : theme.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    { color: theme.text },
+                    themeMode === 'dark' && { color: theme.primary, fontWeight: '800' },
+                  ]}
+                >
+                  Dark
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Canvas Mode Match Presets */}
+            <View style={styles.quickMatchRow}>
+              <TouchableOpacity
+                style={[
+                  styles.quickPresetBtn,
+                  {
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: theme.surfaceBorder,
+                  },
+                ]}
+                onPress={() => onChangeSettings(DEFAULT_CANVAS_SETTINGS_LIGHT)}
+              >
+                <Feather name="sun" size={14} color="#0284C7" />
+                <Text style={[styles.quickPresetText, { color: theme.text }]}>
+                  Reset Canvas to Light Grid
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.quickPresetBtn,
+                  {
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: theme.surfaceBorder,
+                  },
+                ]}
+                onPress={() => onChangeSettings(DEFAULT_CANVAS_SETTINGS_DARK)}
+              >
+                <Feather name="moon" size={14} color="#38BDF8" />
+                <Text style={[styles.quickPresetText, { color: theme.text }]}>
+                  Reset Canvas to Dark Grid
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Grid Pattern Type */}
-            <Text style={styles.sectionTitle}>Grid Style</Text>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Grid Style</Text>
             <View style={styles.typeGrid}>
               {GRID_TYPES.map((type) => {
                 const isSelected = settings.gridType === type.id;
@@ -103,13 +262,19 @@ export function GridSelectorModal({
                     key={type.id}
                     style={[
                       styles.typeCard,
-                      isSelected && styles.typeCardSelected,
+                      {
+                        backgroundColor: theme.surfaceSecondary,
+                        borderColor: theme.surfaceBorder,
+                      },
+                      isSelected && {
+                        borderColor: theme.primary,
+                        backgroundColor: theme.primaryLight,
+                      },
                     ]}
                     onPress={() => {
                       onChangeSettings({
                         ...settings,
                         gridType: type.id,
-                        // auto contrast grid color based on background
                         gridColor: isDarkBackground ? '#64748B' : '#94A3B8',
                       });
                     }}
@@ -117,12 +282,13 @@ export function GridSelectorModal({
                     <MaterialCommunityIcons
                       name={type.icon as any}
                       size={24}
-                      color={isSelected ? '#0284C7' : '#475569'}
+                      color={isSelected ? theme.primary : theme.textSecondary}
                     />
                     <Text
                       style={[
                         styles.typeLabel,
-                        isSelected && styles.typeLabelSelected,
+                        { color: theme.textSecondary },
+                        isSelected && { color: theme.primary, fontWeight: '700' },
                       ]}
                     >
                       {type.label}
@@ -135,7 +301,9 @@ export function GridSelectorModal({
             {/* Grid Spacing / Size (if grid not none) */}
             {settings.gridType !== 'none' && (
               <>
-                <Text style={styles.sectionTitle}>Grid Spacing</Text>
+                <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+                  Grid Spacing
+                </Text>
                 <View style={styles.optionsRow}>
                   {GRID_SIZES.map((size) => {
                     const isSelected = settings.gridSize === size.value;
@@ -144,7 +312,14 @@ export function GridSelectorModal({
                         key={size.label}
                         style={[
                           styles.optionBtn,
-                          isSelected && styles.optionBtnSelected,
+                          {
+                            backgroundColor: theme.surfaceSecondary,
+                            borderColor: theme.surfaceBorder,
+                          },
+                          isSelected && {
+                            borderColor: theme.primary,
+                            backgroundColor: theme.primaryLight,
+                          },
                         ]}
                         onPress={() =>
                           onChangeSettings({
@@ -156,7 +331,8 @@ export function GridSelectorModal({
                         <Text
                           style={[
                             styles.optionLabel,
-                            isSelected && styles.optionLabelSelected,
+                            { color: theme.textSecondary },
+                            isSelected && { color: theme.primary, fontWeight: '700' },
                           ]}
                         >
                           {size.label} ({size.value}px)
@@ -167,7 +343,9 @@ export function GridSelectorModal({
                 </View>
 
                 {/* Grid Opacity */}
-                <Text style={styles.sectionTitle}>Grid Visibility</Text>
+                <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+                  Grid Visibility
+                </Text>
                 <View style={styles.optionsRow}>
                   {OPACITIES.map((op) => {
                     const isSelected = settings.gridOpacity === op.value;
@@ -176,7 +354,14 @@ export function GridSelectorModal({
                         key={op.label}
                         style={[
                           styles.optionBtn,
-                          isSelected && styles.optionBtnSelected,
+                          {
+                            backgroundColor: theme.surfaceSecondary,
+                            borderColor: theme.surfaceBorder,
+                          },
+                          isSelected && {
+                            borderColor: theme.primary,
+                            backgroundColor: theme.primaryLight,
+                          },
                         ]}
                         onPress={() =>
                           onChangeSettings({
@@ -188,7 +373,8 @@ export function GridSelectorModal({
                         <Text
                           style={[
                             styles.optionLabel,
-                            isSelected && styles.optionLabelSelected,
+                            { color: theme.textSecondary },
+                            isSelected && { color: theme.primary, fontWeight: '700' },
                           ]}
                         >
                           {op.label}
@@ -201,12 +387,13 @@ export function GridSelectorModal({
             )}
 
             {/* Canvas Paper / Background Palette */}
-            <Text style={styles.sectionTitle}>Paper & Background</Text>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              Paper & Background
+            </Text>
             <View style={styles.backgroundsGrid}>
               {CANVAS_BACKGROUND_PRESETS.map((preset) => {
                 const isSelected =
-                  settings.backgroundColor.toUpperCase() ===
-                  preset.hex.toUpperCase();
+                  settings.backgroundColor.toUpperCase() === preset.hex.toUpperCase();
                 return (
                   <TouchableOpacity
                     key={preset.name}
@@ -252,11 +439,10 @@ export function GridSelectorModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'flex-end',
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -265,9 +451,10 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 20,
+    borderTopWidth: 1,
   },
   dragHandleContainer: {
     width: '100%',
@@ -278,7 +465,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#CBD5E1',
   },
   scrollContent: {
     paddingBottom: 20,
@@ -297,21 +483,57 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
   },
   closeBtn: {
     padding: 6,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
     marginBottom: 8,
-    marginTop: 8,
+    marginTop: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  themeSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  themeOptionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+    borderWidth: 1.5,
+  },
+  themeOptionText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  quickMatchRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  quickPresetBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    gap: 5,
+    borderWidth: 1,
+  },
+  quickPresetText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   typeGrid: {
     flexDirection: 'row',
@@ -326,23 +548,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     gap: 6,
-  },
-  typeCardSelected: {
-    borderColor: '#0284C7',
-    backgroundColor: '#F0F9FF',
   },
   typeLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
-  },
-  typeLabelSelected: {
-    color: '#0284C7',
-    fontWeight: '700',
   },
   optionsRow: {
     flexDirection: 'row',
@@ -353,23 +564,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     alignItems: 'center',
-  },
-  optionBtnSelected: {
-    borderColor: '#0284C7',
-    backgroundColor: '#E0F2FE',
   },
   optionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
-  },
-  optionLabelSelected: {
-    color: '#0284C7',
-    fontWeight: '700',
   },
   backgroundsGrid: {
     flexDirection: 'row',

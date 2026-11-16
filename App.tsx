@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   BackHandler,
   Linking,
+  useColorScheme,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -29,7 +30,19 @@ import {
   DoodlePath,
   CropRect,
 } from './src/types/doodle';
-import { DEFAULT_CANVAS_SETTINGS } from './src/constants/colors';
+import {
+  DEFAULT_CANVAS_SETTINGS,
+  DEFAULT_CANVAS_SETTINGS_LIGHT,
+  DEFAULT_CANVAS_SETTINGS_DARK,
+} from './src/constants/colors';
+import {
+  ThemeMode,
+  AppTheme,
+  LIGHT_THEME,
+  DARK_THEME,
+  getStoredThemeMode,
+  storeThemeMode,
+} from './src/constants/theme';
 import {
   saveProject,
   shareDoodleFile,
@@ -45,6 +58,9 @@ import {
 } from './src/utils/cropCapture';
 
 export default function App() {
+  const systemColorScheme = useColorScheme();
+  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+
   const [projectId, setProjectId] = useState<string>(() => `doodle_${Date.now()}`);
   const [projectTitle, setProjectTitle] = useState('My Doodle');
   const [versionNumber, setVersionNumber] = useState(1);
@@ -58,8 +74,47 @@ export default function App() {
     '#00A2E8',
     '#22B14C',
   ]);
-  const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(
-    DEFAULT_CANVAS_SETTINGS
+  const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(() => {
+    return systemColorScheme === 'dark'
+      ? DEFAULT_CANVAS_SETTINGS_DARK
+      : DEFAULT_CANVAS_SETTINGS_LIGHT;
+  });
+
+  // Load stored theme mode on launch and apply matching grid if empty
+  useEffect(() => {
+    getStoredThemeMode().then((stored) => {
+      setThemeMode(stored);
+      const isDark =
+        stored === 'dark' || (stored === 'system' && systemColorScheme === 'dark');
+      setCanvasSettings(
+        isDark ? DEFAULT_CANVAS_SETTINGS_DARK : DEFAULT_CANVAS_SETTINGS_LIGHT
+      );
+    });
+  }, []);
+
+  // Compute effective theme
+  const effectiveTheme: AppTheme = useMemo(() => {
+    if (themeMode === 'light') return LIGHT_THEME;
+    if (themeMode === 'dark') return DARK_THEME;
+    return systemColorScheme === 'dark' ? DARK_THEME : LIGHT_THEME;
+  }, [themeMode, systemColorScheme]);
+
+  // Handle user changing theme mode
+  const handleChangeThemeMode = useCallback(
+    (mode: ThemeMode) => {
+      setThemeMode(mode);
+      storeThemeMode(mode);
+      // Auto-adapt canvas grid if pristine/empty
+      if (paths.length === 0) {
+        const isNowDark =
+          mode === 'dark' || (mode === 'system' && systemColorScheme === 'dark');
+        setCanvasSettings(
+          isNowDark ? DEFAULT_CANVAS_SETTINGS_DARK : DEFAULT_CANVAS_SETTINGS_LIGHT
+        );
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [systemColorScheme]
   );
 
   // Unsaved changes tracking
@@ -163,18 +218,19 @@ export default function App() {
     }
   }, [getCurrentProject]);
 
-  // Reset to pristine new canvas
+  // Reset to pristine new canvas with default grid matching current theme
   const performNewCanvasReset = useCallback(() => {
     setProjectId(`doodle_${Date.now()}`);
     setProjectTitle('My Doodle');
     setVersionNumber(1);
     setVersionHistory([]);
     loadPaths([]);
-    setCanvasSettings(DEFAULT_CANVAS_SETTINGS);
+    const isDark = effectiveTheme.isDark;
+    setCanvasSettings(isDark ? DEFAULT_CANVAS_SETTINGS_DARK : DEFAULT_CANVAS_SETTINGS_LIGHT);
     setIsCropModeActive(false);
     setIsDirty(false);
     clearAutoRecoveryDraft();
-  }, [loadPaths]);
+  }, [loadPaths, effectiveTheme.isDark]);
 
   // New Doodle (only warns if there are actual unsaved changes!)
   const handleNewDoodle = useCallback(() => {
@@ -603,8 +659,8 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: effectiveTheme.bg }]}>
+        <StatusBar style={effectiveTheme.statusBarStyle} />
 
         {/* Top Header Bar */}
         <HeaderBar
@@ -622,6 +678,7 @@ export default function App() {
           }}
           onOpenShareModal={() => setShareModalVisible(true)}
           isCropModeActive={isCropModeActive}
+          theme={effectiveTheme}
         />
 
         {/* Drawing Canvas Area */}
@@ -662,6 +719,7 @@ export default function App() {
           onRedo={handleRedo}
           onClear={handleClearWithConfirm}
           onSelectQuickColor={handleSelectColor}
+          theme={effectiveTheme}
         />
 
         {/* Color Picker Modal */}
@@ -670,6 +728,7 @@ export default function App() {
           activeColor={activeColor}
           onSelectColor={handleSelectColor}
           onClose={() => setColorPickerVisible(false)}
+          theme={effectiveTheme}
         />
 
         {/* Grid & Canvas Background Settings Modal */}
@@ -677,6 +736,9 @@ export default function App() {
           visible={gridSettingsVisible}
           settings={canvasSettings}
           onChangeSettings={handleCanvasSettingsChange}
+          themeMode={themeMode}
+          onChangeThemeMode={handleChangeThemeMode}
+          theme={effectiveTheme}
           onClose={() => setGridSettingsVisible(false)}
         />
 
@@ -687,6 +749,7 @@ export default function App() {
           onOpenProject={handleOpenProject}
           onClose={() => setGalleryVisible(false)}
           onNewDoodle={handleNewDoodle}
+          theme={effectiveTheme}
         />
 
         {/* Share & Export Options Modal */}
@@ -700,6 +763,7 @@ export default function App() {
             canvasRef.current?.resetZoom?.();
             setIsCropModeActive(true);
           }}
+          theme={effectiveTheme}
         />
 
         {/* Save & Versions Options Modal */}
@@ -713,6 +777,7 @@ export default function App() {
           onSaveAsVersion={handleSaveAsVersion}
           onSaveAsNewProject={handleSaveAsNewProject}
           onOpenVersionHistory={() => setVersionHistoryVisible(true)}
+          theme={effectiveTheme}
         />
 
         {/* Version History Timeline Modal */}
@@ -726,14 +791,24 @@ export default function App() {
           onExportVersion={handleExportVersion}
           onDeleteVersion={handleDeleteVersion}
           onCreateSnapshotNow={() => setSaveOptionsVisible(true)}
+          theme={effectiveTheme}
         />
 
         {/* Loading Overlay */}
         {isBusy && (
           <View style={styles.busyOverlay}>
-            <View style={styles.busyCard}>
-              <ActivityIndicator size="large" color="#0284C7" />
-              <Text style={styles.busyText}>{busyMessage}</Text>
+            <View
+              style={[
+                styles.busyCard,
+                {
+                  backgroundColor: effectiveTheme.surface,
+                  borderColor: effectiveTheme.surfaceBorder,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <ActivityIndicator size="large" color={effectiveTheme.primary} />
+              <Text style={[styles.busyText, { color: effectiveTheme.text }]}>{busyMessage}</Text>
             </View>
           </View>
         )}

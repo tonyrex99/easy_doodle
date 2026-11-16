@@ -78,3 +78,4 @@ Upload the release app bundle from:
 - Version Name: `1.0.0`
 - Target SDK: `36` (Android 15+)
 - Supported ABIs: `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64` (64-bit compliant)
+

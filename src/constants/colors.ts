@@ -55,7 +55,7 @@ export const STROKE_WIDTH_PRESETS = [
   { label: 'Extra', value: 40 },
 ];
 
-export const DEFAULT_CANVAS_SETTINGS = {
+export const DEFAULT_CANVAS_SETTINGS_LIGHT = {
   backgroundColor: '#FFFFFF',
   gridType: 'squares' as const,
   gridSize: 28,
@@ -63,3 +63,12 @@ export const DEFAULT_CANVAS_SETTINGS = {
   gridOpacity: 0.6,
 };
 
+export const DEFAULT_CANVAS_SETTINGS_DARK = {
+  backgroundColor: '#0F172A',
+  gridType: 'squares' as const,
+  gridSize: 28,
+  gridColor: '#334155',
+  gridOpacity: 0.7,
+};
+
+export const DEFAULT_CANVAS_SETTINGS = DEFAULT_CANVAS_SETTINGS_LIGHT;

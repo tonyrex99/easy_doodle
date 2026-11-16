@@ -5,19 +5,20 @@ import {
   Text,
   Modal,
   TouchableOpacity,
-  ScrollView,
   TextInput,
   TouchableWithoutFeedback,
   PanResponder,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PAINT_PALETTE } from '../constants/colors';
+import { AppTheme, LIGHT_THEME } from '../constants/theme';
 
 interface ColorPickerModalProps {
   visible: boolean;
   activeColor: string;
   onSelectColor: (color: string) => void;
   onClose: () => void;
+  theme?: AppTheme;
 }
 
 export function ColorPickerModal({
@@ -25,6 +26,7 @@ export function ColorPickerModal({
   activeColor,
   onSelectColor,
   onClose,
+  theme = LIGHT_THEME,
 }: ColorPickerModalProps) {
   const [customHex, setCustomHex] = useState(
     activeColor === 'transparent' ? '#000000' : activeColor
@@ -67,38 +69,60 @@ export function ColorPickerModal({
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.surfaceBorder,
+              borderTopWidth: 1,
+            },
+          ]}
+        >
           {/* Drag to dismiss pill */}
           <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
+            <View style={[styles.dragHandle, { backgroundColor: theme.textMuted }]} />
           </View>
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Color Palette</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#64748B" />
+            <Text style={[styles.title, { color: theme.text }]}>Color Palette</Text>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: theme.surfaceSecondary }]}
+            >
+              <Ionicons name="close" size={22} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
 
           {/* Active Color Preview & Transparent Option */}
-          <View style={styles.activeColorRow}>
+          <View
+            style={[
+              styles.activeColorRow,
+              {
+                backgroundColor: theme.surfaceSecondary,
+                borderColor: theme.surfaceBorder,
+              },
+            ]}
+          >
             <View style={styles.previewGroup}>
               <View
                 style={[
                   styles.activeColorBox,
                   activeColor === 'transparent'
-                    ? styles.transparentPreviewBox
+                    ? [styles.transparentPreviewBox, { backgroundColor: theme.surface }]
                     : { backgroundColor: activeColor },
                 ]}
               >
                 {activeColor === 'transparent' && (
-                  <MaterialCommunityIcons name="circle-off-outline" size={22} color="#64748B" />
+                  <MaterialCommunityIcons name="circle-off-outline" size={22} color={theme.textMuted} />
                 )}
               </View>
               <View>
-                <Text style={styles.activeColorLabel}>Active Color</Text>
-                <Text style={styles.activeColorHex}>
+                <Text style={[styles.activeColorLabel, { color: theme.textMuted }]}>
+                  Active Color
+                </Text>
+                <Text style={[styles.activeColorHex, { color: theme.text }]}>
                   {activeColor === 'transparent' ? 'Transparent' : activeColor.toUpperCase()}
                 </Text>
               </View>
@@ -108,20 +132,29 @@ export function ColorPickerModal({
             <TouchableOpacity
               style={[
                 styles.transparentPickBtn,
-                activeColor === 'transparent' && styles.transparentPickBtnActive,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.surfaceBorder,
+                },
+                activeColor === 'transparent' && {
+                  borderColor: theme.primary,
+                  backgroundColor: theme.primaryLight,
+                },
               ]}
               onPress={() => {
                 onSelectColor('transparent');
                 onClose();
               }}
             >
-              <MaterialCommunityIcons name="circle-off-outline" size={18} color="#0284C7" />
-              <Text style={styles.transparentPickText}>Transparent</Text>
+              <MaterialCommunityIcons name="circle-off-outline" size={18} color={theme.primary} />
+              <Text style={[styles.transparentPickText, { color: theme.primary }]}>Transparent</Text>
             </TouchableOpacity>
           </View>
 
           {/* MS Paint Palette Matrix */}
-          <Text style={styles.sectionTitle}>Classic Paint Swatches</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            Classic Paint Swatches
+          </Text>
           <View style={styles.swatchGrid}>
             {PAINT_PALETTE.map((hex) => {
               const isSelected = hex.toLowerCase() === activeColor.toLowerCase();
@@ -131,8 +164,12 @@ export function ColorPickerModal({
                   style={[
                     styles.gridSwatch,
                     { backgroundColor: hex },
-                    hex === '#FFFFFF' && styles.whiteSwatchBorder,
-                    isSelected && styles.gridSwatchSelected,
+                    hex === '#FFFFFF' && { borderColor: theme.surfaceBorder },
+                    isSelected && {
+                      borderColor: theme.primary,
+                      borderWidth: 3,
+                      transform: [{ scale: 1.15 }],
+                    },
                   ]}
                   onPress={() => {
                     onSelectColor(hex);
@@ -145,19 +182,28 @@ export function ColorPickerModal({
           </View>
 
           {/* Custom Hex Code Input */}
-          <Text style={styles.sectionTitle}>Custom Hex Color</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            Custom Hex Color
+          </Text>
           <View style={styles.customHexRow}>
             <TextInput
-              style={styles.hexInput}
+              style={[
+                styles.hexInput,
+                {
+                  backgroundColor: theme.surfaceSecondary,
+                  borderColor: theme.surfaceBorder,
+                  color: theme.text,
+                },
+              ]}
               value={customHex}
               onChangeText={setCustomHex}
               placeholder="#000000"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.textMuted}
               maxLength={7}
               autoCapitalize="characters"
             />
             <TouchableOpacity
-              style={styles.applyHexBtn}
+              style={[styles.applyHexBtn, { backgroundColor: theme.primary }]}
               onPress={handleApplyCustomHex}
             >
               <Text style={styles.applyHexText}>Apply</Text>

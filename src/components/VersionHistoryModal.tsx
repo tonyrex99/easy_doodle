@@ -13,6 +13,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { DoodleVersionSnapshot } from '../types/doodle';
 import { DoodleThumbnail } from './DoodleThumbnail';
+import { AppTheme, LIGHT_THEME } from '../constants/theme';
 
 interface VersionHistoryModalProps {
   visible: boolean;
@@ -24,6 +25,7 @@ interface VersionHistoryModalProps {
   onExportVersion: (snapshot: DoodleVersionSnapshot) => void;
   onDeleteVersion: (snapshotId: string) => void;
   onCreateSnapshotNow: () => void;
+  theme?: AppTheme;
 }
 
 export function VersionHistoryModal({
@@ -36,6 +38,7 @@ export function VersionHistoryModal({
   onExportVersion,
   onDeleteVersion,
   onCreateSnapshotNow,
+  theme = LIGHT_THEME,
 }: VersionHistoryModalProps) {
   const sortedVersions = [...versions].sort((a, b) => b.timestamp - a.timestamp);
 
@@ -84,7 +87,16 @@ export function VersionHistoryModal({
     const isCurrent = item.versionNumber === currentVersionNumber;
 
     return (
-      <View style={[styles.versionCard, isCurrent && styles.currentVersionCard]}>
+      <View
+        style={[
+          styles.versionCard,
+          {
+            backgroundColor: theme.surfaceSecondary,
+            borderColor: isCurrent ? theme.primary : theme.surfaceBorder,
+          },
+          isCurrent && { borderWidth: 2 },
+        ]}
+      >
         {/* Top Info Header within Card */}
         <View style={styles.cardHeaderRow}>
           <DoodleThumbnail
@@ -95,23 +107,23 @@ export function VersionHistoryModal({
 
           <View style={styles.versionInfo}>
             <View style={styles.titleLine}>
-              <Text style={styles.versionLabel} numberOfLines={1}>
+              <Text style={[styles.versionLabel, { color: theme.text }]} numberOfLines={1}>
                 {item.label}
               </Text>
               {isCurrent && (
-                <View style={styles.activePill}>
-                  <Text style={styles.activePillText}>CURRENT</Text>
+                <View style={[styles.activePill, { backgroundColor: theme.primaryLight }]}>
+                  <Text style={[styles.activePillText, { color: theme.primary }]}>CURRENT</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.versionMeta}>
+            <Text style={[styles.versionMeta, { color: theme.textSecondary }]}>
               {formatDate(item.timestamp)} • {item.strokeCount} strokes
             </Text>
           </View>
         </View>
 
         {item.note ? (
-          <Text style={styles.versionNote} numberOfLines={2}>
+          <Text style={[styles.versionNote, { color: theme.textSecondary }]} numberOfLines={2}>
             "{item.note}"
           </Text>
         ) : null}
@@ -119,25 +131,31 @@ export function VersionHistoryModal({
         {/* Action Row: clean, bounded layout where delete icon is always visible and never cut off */}
         <View style={styles.cardBottomRow}>
           <TouchableOpacity
-            style={styles.restoreBtn}
+            style={[
+              styles.restoreBtn,
+              {
+                backgroundColor: theme.primaryLight,
+                borderColor: theme.surfaceBorder,
+              },
+            ]}
             onPress={() => handleConfirmRestore(item)}
             accessibilityLabel="Restore Version"
           >
-            <Ionicons name="arrow-undo" size={15} color="#0284C7" />
-            <Text style={styles.restoreBtnText}>Restore</Text>
+            <Ionicons name="arrow-undo" size={15} color={theme.primary} />
+            <Text style={[styles.restoreBtnText, { color: theme.primary }]}>Restore</Text>
           </TouchableOpacity>
 
           <View style={styles.secondaryActions}>
             <TouchableOpacity
-              style={styles.iconBtn}
+              style={[styles.iconBtn, { backgroundColor: theme.surface }]}
               onPress={() => onExportVersion(item)}
               accessibilityLabel="Export version"
             >
-              <Ionicons name="share-outline" size={16} color="#475569" />
+              <Ionicons name="share-outline" size={16} color={theme.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.iconBtn, styles.deleteBtn]}
+              style={[styles.iconBtn, styles.deleteBtn, { backgroundColor: theme.surface }]}
               onPress={() => onDeleteVersion(item.id)}
               accessibilityLabel="Delete version"
             >
@@ -162,46 +180,66 @@ export function VersionHistoryModal({
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.surfaceBorder,
+              borderTopWidth: 1,
+            },
+          ]}
+        >
           {/* Drag to dismiss pill */}
           <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
+            <View style={[styles.dragHandle, { backgroundColor: theme.textMuted }]} />
           </View>
 
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <MaterialCommunityIcons name="history" size={24} color="#0284C7" />
+              <MaterialCommunityIcons name="history" size={24} color={theme.primary} />
               <View>
-                <Text style={styles.title}>Version History</Text>
-                <Text style={styles.subtitle} numberOfLines={1}>
+                <Text style={[styles.title, { color: theme.text }]}>Version History</Text>
+                <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>
                   {projectTitle}
                 </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#64748B" />
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: theme.surfaceSecondary }]}
+            >
+              <Ionicons name="close" size={22} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
 
           {/* Create new snapshot bar */}
           <TouchableOpacity
-            style={styles.createSnapshotBtn}
+            style={[
+              styles.createSnapshotBtn,
+              {
+                backgroundColor: theme.surfaceSecondary,
+                borderColor: theme.surfaceBorder,
+              },
+            ]}
             onPress={() => {
               onClose();
               onCreateSnapshotNow();
             }}
           >
-            <Ionicons name="add-circle-outline" size={18} color="#0284C7" />
-            <Text style={styles.createSnapshotText}>Save Current Canvas as New Version</Text>
+            <Ionicons name="add-circle-outline" size={18} color={theme.primary} />
+            <Text style={[styles.createSnapshotText, { color: theme.primary }]}>
+              Save Current Canvas as New Version
+            </Text>
           </TouchableOpacity>
 
           {/* List of snapshots */}
           {sortedVersions.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="clock-outline" size={44} color="#CBD5E1" />
-              <Text style={styles.emptyTitle}>No Version Snapshots Yet</Text>
-              <Text style={styles.emptySubtitle}>
+              <MaterialCommunityIcons name="clock-outline" size={44} color={theme.textMuted} />
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No Version Snapshots Yet</Text>
+              <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
                 Whenever you want to save a milestone, tap "Save & Versions" and create a named snapshot.
               </Text>
             </View>
