@@ -8,10 +8,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tony.easydoodle"
+      "bundleIdentifier": "com.easy.doodle"
     },
     "android": {
-      "package": "com.tony.easydoodle",
+      "package": "com.easy.doodle",
       "adaptiveIcon": {
         "backgroundColor": "#0284C7",
         "foregroundImage": "./assets/android-icon-foreground.png",
