@@ -1,25 +1,43 @@
 {
   "expo": {
-    "name": "easy_doodle",
+    "name": "Easy Doodle",
     "slug": "easy_doodle",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tony.easydoodle"
     },
     "android": {
+      "package": "com.tony.easydoodle",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0284C7",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Easy Doodle to save your drawings and cropped screen grabs to your photos.",
+          "savePhotosPermission": "Allow Easy Doodle to save your drawings and cropped screen grabs to your photos."
+        }
+      ],
+      "expo-font"
+    ]
   }
 }
