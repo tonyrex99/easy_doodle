@@ -1,0 +1,23 @@
+Category,Item,Declaration_Type,Required_By_Google_Play,User_Facing_Reason,Data_Safety_Status
+Permission,READ_MEDIA_IMAGES,Android 13+ Media,Optional / Runtime,"Allows users to import existing drawings, reference images, or custom wallpapers into Easy Doodle.",No data uploaded. Processed 100% locally on device.
+Permission,READ_EXTERNAL_STORAGE,Android 12 and below Storage,Legacy / Runtime,"Allows users to open .doodle project files saved on their device or SD card.",No data uploaded. Processed 100% locally on device.
+Permission,WRITE_EXTERNAL_STORAGE,Android 10 and below Storage,Legacy / Runtime,"Allows users to save drawings and cropped screen grabs to device storage.",No data uploaded. Processed 100% locally on device.
+Permission,INTERNET,Network Access,Standard Manifest,"Required by Expo runtime framework for local development; no user data or drawings transmitted.",No personal data transmitted.
+Data Safety,Personal Information,User Data Collection,Mandatory,None,"Easy Doodle does NOT collect names, emails, phone numbers, or user IDs."
+Data Safety,Photos and Videos,User Data Collection,Mandatory,Local Photos Only,"Photos/drawings created by user are stored strictly on local device storage. Never shared with developers or third parties."
+Data Safety,Files and Documents,User Data Collection,Mandatory,Local .doodle files,"Project files (.doodle) are stored in app sandbox and exported only when user taps Share."
+Data Safety,Financial Info,User Data Collection,Mandatory,None,No payment info collected. Free drawing application.
+Data Safety,Location,User Data Collection,Mandatory,None,No location access requested or collected.
+Data Safety,Data Encryption,Security,Mandatory,Encrypted in Transit,"Any system-level sharing uses Android OS secure IPC and native TLS."
+Data Safety,Data Deletion Request,Compliance,Mandatory,User Controlled,"Users can delete any doodle or all saved files directly in app with one tap or by uninstalling."
+Target Audience,Age Groups,Content Rating,Mandatory,"All Ages (3+, Everyone)","Contains no adult content, violence, gambling, or offensive material."
+Advertising,Ads Status,Policy Declaration,Mandatory,No Ads,"This app does not contain advertisements."
+App Category,Category,Play Console,Mandatory,"Art & Design / Tools","Freehand drawing, vector sketches, and diagramming tool."
+Library,react-native,Core Framework,MIT License,"0.88.1","App runtime and native bridge."
+Library,react-native-svg,Graphics,MIT License,"15.16.0","Renders smooth vector strokes, geometric shapes, and grid patterns."
+Library,react-native-view-shot,Capture,MIT License,"6.1.1","Captures canvas surface for export and area screen grab."
+Library,expo-image-manipulator,Image Processing,MIT License,"~58.0.16","Performs precise cropping of selected screen grab areas."
+Library,expo-sharing,Social Sharing,MIT License,"~58.0.23","Invokes native Android share dialog to share PNGs and .doodle files."
+Library,expo-media-library,Gallery Saving,MIT License,"~58.0.14","Saves drawings directly to user's device photo album."
+Library,expo-document-picker,File Picker,MIT License,"~58.0.5","Allows user to select and import .doodle vector files."
+Library,@react-native-async-storage/async-storage,Storage,MIT License,"2.2.0","Stores project metadata, version history, and auto-recovery drafts locally."
